@@ -1,4 +1,5 @@
 # EMAD2024-2025-_DefNet-Back-End
+
 Questa repository verrà utilizzata per illustrare la creazione del microservizio reallizato con Python e FAST-Api
 
 Ecco un esempio di documentazione in formato markdown per il tuo microservizio back-end in Python, con i comandi necessari per installare i pacchetti all'interno dell'environment su Windows, Linux e macOS.
@@ -60,6 +61,8 @@ Assicurati che l'ambiente virtuale sia attivo e poi esegui:
 pip3 install -r requirements.txt
 ```
 
-## Automazione dei Processi
+### Run dell'applicazione
 
-Puoi automatizzare i processi creando degli script di shell che eseguono i comandi sopra descritti. Ecco un esempio per ciascun sistema operativo:
+```sh
+uvicorn main:app --reload
+```
