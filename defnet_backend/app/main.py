@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from typing import Optional
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
@@ -17,12 +18,30 @@ Base = declarative_base()
 # Contesto per l'hashing delle password
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
+app.add_middleware(
+    CORSMiddleware, 
+    allow_origins=["*"],
+    allow_credentials = True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Modello del database per gli utenti
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     password_hash = Column(String)
+    
+class UserResponse(BaseModel):
+    id : int
+    username: str
+    
+class UserCreate(BaseModel):
+    username: str
+    password: str
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -69,6 +88,7 @@ def login(login: Login, db: Session = Depends(get_db)):
 
 
 # Endpoint per la registrazione di un nuovo utente con controlli
+
 @app.post("/register", response_model=UserResponse)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
     # Controllo se l'username è già in uso
