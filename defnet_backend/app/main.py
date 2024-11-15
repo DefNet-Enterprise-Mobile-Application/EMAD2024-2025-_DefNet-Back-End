@@ -85,23 +85,3 @@ def login(login: Login, db: Session = Depends(get_db)):
 
     # Se username e password sono corretti
     return {"message": "Login successful!"}
-
-
-# Endpoint per la registrazione di un nuovo utente con controlli
-
-@app.post("/register", response_model=UserResponse)
-def register_user(user: UserCreate, db: Session = Depends(get_db)):
-    # Controllo se l'username è già in uso
-    db_user_by_username = db.query(User).filter(User.username == user.username).first()
-    if db_user_by_username:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
-
-    # Creazione dell'utente con hashing della password
-    new_user = User(
-        username=user.username,
-        password_hash=get_password_hash(user.password)
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
