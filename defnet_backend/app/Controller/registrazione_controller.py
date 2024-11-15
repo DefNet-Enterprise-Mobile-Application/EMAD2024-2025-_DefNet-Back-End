@@ -7,11 +7,11 @@ from typing import Optional
 from database.database import get_db, Base
 from service.password_service import get_password_hash , verify_password
 from models.users import User
-from controller.payload.request import User
 
 
-from payload.response.registration_response import UserResponse
-from payload.request.registration_request import UserCreate
+
+from controller.payload.response.registration_response import UserResponse
+from controller.payload.request.registration_request import UserCreate
 
 
 from fastapi import APIRouter
