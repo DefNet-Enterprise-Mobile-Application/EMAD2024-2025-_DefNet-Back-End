@@ -1,1 +1,9 @@
 /env/*
+
+# Exclude compiled Python files
+*.pyc
+*.pyo
+*.pyd
+
+# Exclude __pycache__ directories
+__pycache__/

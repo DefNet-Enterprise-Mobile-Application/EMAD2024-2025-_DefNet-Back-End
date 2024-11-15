@@ -1,8 +1,11 @@
 from fastapi import FastAPI
-
-from controller import login_controller,registrazione_controller
-
 from fastapi.middleware.cors import CORSMiddleware
+
+
+from  controller import login_controller,registrazione_controller
+from database.create_tables import create_database
+
+
 
 
 
@@ -23,3 +26,7 @@ app.add_middleware(
     allow_methods=["*"],  # Consenti tutte le richieste HTTP
     allow_headers=["*"],
 )
+
+
+# Inizializza le tabelle al momento dell'avvio dell'applicazione
+create_database()

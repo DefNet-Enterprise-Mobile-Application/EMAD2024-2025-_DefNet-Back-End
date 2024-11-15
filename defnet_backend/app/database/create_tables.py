@@ -1,3 +1,6 @@
-from defnet_backend.app.database.database import engine, Base
+from database.database import engine, Base
 
-Base.metadata.create_all(bind=engine)
+
+
+def create_database():
+    Base.metadata.create_all(bind=engine)
