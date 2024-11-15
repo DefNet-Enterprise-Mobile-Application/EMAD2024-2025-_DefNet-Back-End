@@ -4,15 +4,21 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from pydantic import BaseModel
 from typing import Optional
-from main import Base, app, get_password_hash, get_db, UserResponse, UserCreate
+from database.database import get_db, Base
+from service.password_service import get_password_hash , verify_password
+from models.users import User
+from controller.payload.request import User
 
-class User(Base):
-    __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
-    password_hash = Column(String)
+
+from payload.response.registration_response import UserResponse
+from payload.request.registration_request import UserCreate
+
+
+from fastapi import APIRouter
+
+router = APIRouter()
     
-@app.post("/register", response_model=UserResponse)
+@router.post("/register", response_model=UserResponse)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
     # Controllo se l'username è già in uso
     db_user_by_username = db.query(User).filter(User.username == user.username).first()
