@@ -6,11 +6,6 @@ from  controller import login_controller,registrazione_controller
 from database.create_tables import create_database
 
 
-
-
-
-
-
 app = FastAPI()
 
 # Include the routers

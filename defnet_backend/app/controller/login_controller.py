@@ -20,6 +20,9 @@ from fastapi import APIRouter
 router = APIRouter()
 
 # Endpoint di login con controlli specifici
+# Utilizzare un oggetto LoginRequest - oggetto di Login per effettuare il Login 
+# Oggetto Session - sincronizzazione del Db con oggetti ORM 
+
 @router.post("/login")
 def login(loginPayload: LoginRequest, db: Session = Depends(get_db)):
     # Controllo se l'utente esiste
