@@ -7,3 +7,6 @@
 
 # Exclude __pycache__ directories
 __pycache__/
+
+# Exclude test.db
+test.db

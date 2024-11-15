@@ -1,8 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-
-from  controller import login_controller,registrazione_controller
+from controller import login_controller,registrazione_controller
 from database.create_tables import create_database
 
 
