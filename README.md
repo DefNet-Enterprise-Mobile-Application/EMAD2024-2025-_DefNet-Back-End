@@ -64,5 +64,5 @@ pip3 install -r requirements.txt
 ### Run dell'applicazione
 
 ```sh
-uvicorn main:app --reload
+uvicorn main:app --reload --host 0.0.0.0 --port 8000 
 ```

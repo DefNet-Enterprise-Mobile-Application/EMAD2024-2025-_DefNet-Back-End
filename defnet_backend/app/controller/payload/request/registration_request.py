@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
 # Oggetto Payload - User Registration  
-class UserCreate(BaseModel):
+class RegistrationRequest(BaseModel):
     username: str
     password: str

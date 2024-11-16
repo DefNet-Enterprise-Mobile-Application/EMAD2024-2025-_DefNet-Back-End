@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from controller import login_controller,registrazione_controller
+from controller import login_controller
 from database.create_tables import create_database
+from controller import registration_controller
 
 
 app = FastAPI()
@@ -11,7 +12,7 @@ app = FastAPI()
 # Login Routing 
 app.include_router(login_controller.router)
 # Registration Routing  
-app.include_router(registrazione_controller.router)
+app.include_router(registration_controller.router)
 
 
 # Inserisco la configurazione CORS per non avere eventuali blocchi al mio server locale 
