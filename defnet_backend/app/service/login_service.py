@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from models.users import User
 from controller.payload.request.login_request import LoginRequest
-from password_service import verify_password
+from service.password_service import verify_password
 
 def login_user(loginPayload: LoginRequest, db: Session):
     # Controllo se l'utente esiste
