@@ -9,4 +9,4 @@
 __pycache__/
 
 # Exclude test.db
-test.db
+./test.db
