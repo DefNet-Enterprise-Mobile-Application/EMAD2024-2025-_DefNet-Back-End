@@ -1,22 +1,21 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from controller import login_controller
-from database.create_tables import create_database
-from controller import registration_controller
+from controller import login_controller, registration_controller, profile_controller  # Aggiungi profile_controller
 
+
+from database.create_tables import create_database
 
 app = FastAPI()
 
+
+
 # Include the routers
 
-# Login Routing 
 app.include_router(login_controller.router)
-# Registration Routing  
 app.include_router(registration_controller.router)
+app.include_router(profile_controller.router)  # Aggiungi il router per il profilo
 
-
-# Inserisco la configurazione CORS per non avere eventuali blocchi al mio server locale 
-# Preferibilmente è meglio settare l'indirizzo IP con porta locale 
+# Configurazione CORS per il server locale
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Usa "*" per consentire tutte le origini (per scopi di sviluppo)
@@ -24,7 +23,6 @@ app.add_middleware(
     allow_methods=["*"],  # Consenti tutte le richieste HTTP
     allow_headers=["*"],
 )
-
 
 # Inizializza le tabelle al momento dell'avvio dell'applicazione
 create_database()
