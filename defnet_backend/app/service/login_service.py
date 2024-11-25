@@ -3,6 +3,23 @@ from fastapi import HTTPException, status
 from models.users import User
 from controller.payload.request.login_request import LoginRequest
 from service.password_service import verify_password
+from datetime import datetime, timedelta
+import jwt
+
+# Configurazione JWT
+SECRET_KEY = "il_tuo_segreto_super_sicuro"  # Cambialo con un valore sicuro
+ALGORITHM = "HS256"  # Algoritmo di hashing
+ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Tempo di scadenza del token in minuti
+
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
 
 def login_user(loginPayload: LoginRequest, db: Session):
     # Controllo se l'utente esiste
@@ -13,12 +30,33 @@ def login_user(loginPayload: LoginRequest, db: Session):
             detail="Username not found"
         )
 
+    print(f"Hash in DB: {db_user.password_hash}")
+    print(f"Password received: {loginPayload.password}")
+
     # Controllo della password
     if not verify_password(loginPayload.password, db_user.password_hash):
+        print("Password mismatch")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect password"
         )
 
     # Se username e password sono corretti
-    return {"message": "Login successful!"}
+     # Se login ha successo, genera un JWT
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={
+            "sub": db_user.username,
+            "user_id": db_user.id
+        },
+        expires_delta=access_token_expires
+    )
+    
+    print("Login successful")
+    return {
+        "message": "Login successful!",
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60  # Durata del token in secondi
+    }
+    # return {"message": "Login successful!"}

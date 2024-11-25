@@ -2,8 +2,6 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-
-
 # Import from Service 
 from service.login_service import login_user
 
@@ -16,6 +14,9 @@ from controller.payload.request.login_request import LoginRequest
 
 
 from fastapi import APIRouter
+
+#import bcrypt #aggiunto io
+
 
 router = APIRouter()
 
