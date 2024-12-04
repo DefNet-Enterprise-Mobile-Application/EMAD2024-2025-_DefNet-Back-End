@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.service.speed_test_service import get_download_speed, get_latency, get_upload_speed
+from service.speed_test_service import get_download_speed, get_latency, get_upload_speed
 
 router = APIRouter()
 

@@ -14,7 +14,7 @@ app.include_router(login_controller.router)
 app.include_router(registration_controller.router)
 app.include_router(profile_controller.router) 
 app.include_router(logout_controller.router)
-app.include_router(speed_test_controller.routes)
+app.include_router(speed_test_controller.router)
 
 # Configurazione CORS per il server locale
 app.add_middleware(
