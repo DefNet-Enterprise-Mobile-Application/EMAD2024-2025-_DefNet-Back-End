@@ -5,6 +5,7 @@ from controller.payload.request.login_request import LoginRequest
 from service.password_service import verify_password
 from datetime import datetime, timedelta
 import jwt
+from dependencies import blacklist
 
 # Configurazione JWT
 SECRET_KEY = "il_tuo_segreto_super_sicuro"  # Cambialo con un valore sicuro
@@ -30,9 +31,6 @@ def login_user(loginPayload: LoginRequest, db: Session):
             detail="Username not found"
         )
 
-    print(f"Hash in DB: {db_user.password_hash}")
-    print(f"Password received: {loginPayload.password}")
-
     # Controllo della password
     if not verify_password(loginPayload.password, db_user.password_hash):
         print("Password mismatch")
@@ -47,10 +45,18 @@ def login_user(loginPayload: LoginRequest, db: Session):
     access_token = create_access_token(
         data={
             "sub": db_user.username,
-            "user_id": db_user.id
+            "user_id": db_user.id,
+            "email": db_user.email 
         },
         expires_delta=access_token_expires
     )
+    
+    # Se l'utente ha cambiato la password, invalidiamo il token precedente (assicurandoci che il token precedente sia nella blacklist)
+    if hasattr(db_user, 'previous_token') and db_user.previous_token:
+        blacklist.add(db_user.previous_token)
+        
+    # Aggiorna il token precedente nell'utente (opzionale)
+    db_user.previous_token = access_token
     
     print("Login successful")
     return {
@@ -59,4 +65,4 @@ def login_user(loginPayload: LoginRequest, db: Session):
         "token_type": "bearer",
         "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60  # Durata del token in secondi
     }
-    # return {"message": "Login successful!"}
+  
