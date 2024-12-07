@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
-from dependencies import blacklist
-from dependencies import oauth2_scheme, get_current_user
+from service.jwt_service import blacklist
+from service.jwt_service import oauth2_scheme
 
 router = APIRouter()
 
 # Endpoint per il logout
 @router.post("/logout")
-async def logout(token: str = Depends(oauth2_scheme)):
+async def logout(authorization: str = Depends(oauth2_scheme)):
     try:
         # Aggiungi il token alla blacklist
-        blacklist.add(token)
+        blacklist.add(authorization)
         return {"message": "Logged out successfully."}
     except Exception as e:
         raise HTTPException(status_code=500, detail="Error logging out")
