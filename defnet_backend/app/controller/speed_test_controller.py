@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from service.speed_test_service import get_download_speed, get_latency, get_upload_speed
 
 router = APIRouter()
@@ -6,6 +7,7 @@ router = APIRouter()
 @router.get("/speed-test")
 async def fetch_speed_data():
     try:
+        print("Inizio ad effettuare lo speed-test .....")
         # Ottieni i valori da ciascun metodo del service
         download_speed = get_download_speed()
         upload_speed = get_upload_speed()
