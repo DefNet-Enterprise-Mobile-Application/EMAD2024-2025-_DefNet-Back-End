@@ -35,6 +35,8 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+    print("Encoded JWT : "+encoded_jwt)
     return encoded_jwt
 
 def verify_token_in_blacklist(token: str) -> bool:
@@ -63,10 +65,20 @@ def decode_token(token: str):
         JWTError: Se il token è invalido o scaduto.
     """
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print("Token received !")
+        payload = jwt.decode(jwt=token, key=SECRET_KEY, algorithms=[ALGORITHM],options={"verify_signature": False})
         return payload
-    except JWTError:
-        raise
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error decoding token: {str(e)}")
+
+
+
+
+
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     """
@@ -89,9 +101,13 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     )
 
     try:
+        print("Stampa del Token : "+token)
         # Decodifica del token JWT
         payload = decode_token(token)
         username: str = payload.get("sub")  # Il campo 'sub' contiene il nome utente
+
+        print("Stampa del Payload : "+payload)
+        print("Stampa dell'username : "+username)
         
         if username is None:
             raise credentials_exception
