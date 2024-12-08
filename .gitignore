@@ -1,1 +1,12 @@
 /env/*
+
+# Exclude compiled Python files
+*.pyc
+*.pyo
+*.pyd
+
+# Exclude __pycache__ directories
+__pycache__/
+
+# Exclude test.db
+./app/test.db
