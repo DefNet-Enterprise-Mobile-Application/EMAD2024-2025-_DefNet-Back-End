@@ -20,3 +20,9 @@ def register_user_endpoint(user: RegistrationRequest, db: Session = Depends(get_
         # Log error
         print(f"Unexpected error: {e}")
         return False
+    
+
+
+@router.get('/test', response_model=bool)
+def test_reach_connection():
+    return {"message": "Password updated successfully"}

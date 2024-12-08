@@ -6,7 +6,7 @@ from service.jwt_service import blacklist
 from service.jwt_service import get_current_user, oauth2_scheme
 
 from database.database import get_db
-from service.password_service import get_password_hash, verify_password  # Aggiungi queste importazioni
+from service.password_service import verify_password  # Aggiungi queste importazioni
 from service.profile_service import update_profile
 
 from models.passwordRequest import ChangePasswordRequest

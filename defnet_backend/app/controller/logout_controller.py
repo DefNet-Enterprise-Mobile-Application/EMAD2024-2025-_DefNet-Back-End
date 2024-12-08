@@ -23,4 +23,4 @@ async def logout(authorization: str = Depends(oauth2_scheme), db: Session = Depe
     except HTTPException as e:
         raise e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error logging out")
+        raise HTTPException(status_code = 500, detail="Error logging out")
