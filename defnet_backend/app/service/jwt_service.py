@@ -4,9 +4,11 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 import jwt
 import time
+
 from datetime import datetime, timedelta
 from models.users import User  # Se "app" è la cartella principale del progetto
 from database.database import get_db
+
 
 # Configurazione JWT
 SECRET_KEY = "il_tuo_segreto_super_sicuro"  # Cambia questo valore con un segreto sicuro
@@ -18,8 +20,25 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")  # Endpoint per ott
 blacklist = set()  # Una blacklist semplice (può essere un database in un'applicazione più complessa)
 
 
+
+
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+
+
 def verify_token_in_blacklist(token: str) -> bool:
     return token in blacklist
+
+
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     """
@@ -65,4 +84,3 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
     return user
-

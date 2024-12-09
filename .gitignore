@@ -10,4 +10,4 @@ __pycache__/*
 .idea/*
 
 # Exclude test.db
-./test.db
+./app/test.db
