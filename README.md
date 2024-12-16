@@ -1,8 +1,6 @@
 # EMAD2024-2025-_DefNet-Back-End
 
-Questa repository verrà utilizzata per illustrare la creazione del microservizio reallizato con Python e FAST-Api
-
-Ecco un esempio di documentazione in formato markdown per il tuo microservizio back-end in Python, con i comandi necessari per installare i pacchetti all'interno dell'environment su Windows, Linux e macOS.
+Questa repository verrà utilizzata per illustrare la creazione del microservizio reallizato con Python e FAST-Api per Windows , Linux , MacOS
 
 ## Introduzione
 
