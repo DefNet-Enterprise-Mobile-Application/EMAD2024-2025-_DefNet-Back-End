@@ -1,48 +1,55 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from models.users import User
+
+from service.jwt_service import blacklist
+from service.jwt_service import get_current_user, oauth2_scheme
+
 from database.database import get_db
-from service.password_service import get_password_hash, verify_password  # Aggiungi queste importazioni
+from service.password_service import verify_password  # Aggiungi queste importazioni
+from service.profile_service import update_profile
+
+from models.passwordRequest import ChangePasswordRequest
+
 
 router = APIRouter()
 
-# Endpoint per ottenere il profilo dell'utente
-@router.get("/users/{user_id}/profile")
-async def get_user_profile(user_id: int, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.id == user_id).first()
-    if not db_user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return {"username": db_user.username}
-
-# Endpoint per aggiornare il profilo dell'utente
-@router.put("/users/{user_id}/profile")
-async def update_user_profile(
+# Endpoint dedicato al cambio della password
+@router.put("/users/{user_id}/change-password")
+async def change_password(
     user_id: int,
-    username: str = None,
-    current_password: str = None,
-    new_password: str = None,
-    db: Session = Depends(get_db)
+    payload: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),  # Autenticazione tramite token
+    token: str = Depends(oauth2_scheme)
 ):
+    # Verifica che l'utente stia cambiando la propria password
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Operation not allowed")
+
     db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    # Controllo se l'utente sta cambiando la password
-    if current_password and new_password:
-        if not verify_password(current_password, db_user.password_hash):  # Usa verify_password per verificare la password
-            raise HTTPException(status_code=400, detail="Incorrect password")
-        db_user.password_hash = get_password_hash(new_password)  # Salva la nuova password hashata
-    
-    # Se c'è un nuovo username, controllo se è già preso
-    if username and username != db_user.username:
-        db_user_by_username = db.query(User).filter(User.username == username).first()
-        if db_user_by_username:
-            raise HTTPException(status_code=400, detail="Username already taken")
-        db_user.username = username  # Aggiorna l'username se disponibile
 
-    # Salvo le modifiche nel database
-    db.commit()
-    db.refresh(db_user)
-    
-    return {"message": "Profile updated successfully"}
+    # Verifica della password corrente
+    if not verify_password(payload.current_password, db_user.password_hash):
+        raise HTTPException(status_code=400, detail="Incorrect current password")
 
+    # Verifica che la nuova password sia diversa
+    if payload.current_password == payload.new_password:
+        raise HTTPException(status_code=400, detail="New password cannot be the same as the current password")
+
+     # Usa il servizio per aggiornare la password
+    try:
+        # Modifica la password tramite il servizio
+        update_profile(user_id=user_id, new_username=None, current_password=payload.current_password, new_password=payload.new_password, db=db)
+
+        # Invalida il vecchio token (aggiungendolo alla blacklist)
+        #token = payload.token  # Recupera il token dell'utente corrente
+        blacklist.add(token)  # Aggiungi il token alla blacklist per invalidarlo
+
+    except HTTPException as e:
+        raise e  # Rilancia l'eccezione se qualcosa va storto
+
+    return {"message": "Password updated successfully"}
+   

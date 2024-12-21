@@ -1,12 +1,13 @@
 /env/*
-
+/defnetenv/*
 # Exclude compiled Python files
 *.pyc
 *.pyo
 *.pyd
 
 # Exclude __pycache__ directories
-__pycache__/
+__pycache__/*
+.idea/*
 
 # Exclude test.db
-./test.db
+./app/test.db

@@ -32,24 +32,18 @@ def update_profile(user_id: int, new_username: str, current_password: str, new_p
     if not verify_password(current_password, db_user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect current password")
     
-    # Se il nuovo username è fornito, controllo se è già in uso
-    if new_username and new_username != db_user.username:
-        db_user_by_username = db.query(User).filter(User.username == new_username).first()
-        if db_user_by_username:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
-        db_user.username = new_username  # Aggiorno l'username
-    
+   
     # Aggiorno la password se è stata fornita una nuova password
-    if new_password:
-        if new_password == current_password:  # Non permetti di impostare la stessa password
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password cannot be the same as current password")
-        db_user.password_hash = get_password_hash(new_password)
+    if new_password == current_password:  # Non permetti di impostare la stessa password
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password cannot be the same as current password")
+    
+    db_user.password_hash = get_password_hash(new_password)
     
     # Salvo le modifiche nel database
     db.commit()
     db.refresh(db_user)
 
     # Log delle modifiche al profilo
-    logger.info(f"User profile updated: ID = {db_user.id}, Username = {db_user.username}")  # Aggiungi un log
+    logger.info(f"User profile updated: ID = {db_user.id}, Password update")  # Aggiungi un log
 
     return True
