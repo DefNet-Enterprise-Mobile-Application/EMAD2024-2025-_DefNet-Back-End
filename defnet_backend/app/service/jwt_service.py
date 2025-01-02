@@ -84,3 +84,24 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
     return user
+
+
+def extract_username_from_token(token: str) -> str:
+    """
+    Decodifica il token JWT e restituisce il valore del campo 'sub' (username).
+
+    Args:
+        token (str): Il token JWT.
+
+    Returns:
+        str: L'username estratto dal campo 'sub'.
+    """
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        if username is None:
+            raise ValueError("Il campo 'sub' non è presente nel token")
+        return username
+    except JWTError as e:
+        print(f"Errore durante la decodifica del token: {e}")
+        raise ValueError("Token non valido")
