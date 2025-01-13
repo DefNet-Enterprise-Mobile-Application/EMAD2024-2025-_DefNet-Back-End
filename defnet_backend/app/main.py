@@ -50,9 +50,6 @@ async def startup_event():
     
         # Avvia il processo per leggere dalla coda e inviare i messaggi ai WebSocket
         asyncio.create_task(mqtt_login.process_message_queue())
-    
-        #asyncio.create_task(ensure_task(mqtt_login.process_message_queue))
-        
 
     except Exception as e:
         print(f"Errore durante la configurazione MQTT: {e}")
