@@ -1,4 +1,4 @@
-import paho.mqtt.client as mqtt
+#import paho.mqtt.client as mqtt
 import asyncio
 from mqtt.web_socket import notify_websocket_clients 
 
@@ -10,7 +10,7 @@ MQTT_BROKER = "localhost"  # Sostituisci con l'indirizzo del tuo broker MQTT
 MQTT_PORT = 1883
 
 # Crea il client MQTT
-mqtt_client = mqtt.Client()
+#mqtt_client = mqtt.Client()
 
 # Coda per i messaggi MQTT
 message_queue = asyncio.Queue()

@@ -42,7 +42,7 @@ def login(loginPayload: LoginRequest, request: Request, db: Session = Depends(ge
         client_ip = request.client.host
         
         # Pubblica un messaggio MQTT
-        publish_mqtt_message(MQTT_TOPIC_SUCCESS, f"Login riuscito per l'utente {username} da IP {client_ip}")
+        #publish_mqtt_message(MQTT_TOPIC_SUCCESS, f"Login riuscito per l'utente {username} da IP {client_ip}")
 
         # Ritorna il risultato del login
         return result
@@ -52,7 +52,7 @@ def login(loginPayload: LoginRequest, request: Request, db: Session = Depends(ge
         client_ip = request.client.host
         
         # In caso di errore (login fallito), pubblichiamo il messaggio di fallimento su MQTT
-        publish_mqtt_message(MQTT_TOPIC_FAIL, f"Login fallito per l'utente {loginPayload.username} da IP {client_ip}")
+        #publish_mqtt_message(MQTT_TOPIC_FAIL, f"Login fallito per l'utente {loginPayload.username} da IP {client_ip}")
         
         # Rilancia l'errore HTTPException per restituire il codice di stato 401 o altre informazioni
         raise e
