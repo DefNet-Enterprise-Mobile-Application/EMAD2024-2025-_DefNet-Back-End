@@ -78,8 +78,11 @@ class ConnectionManager:
         disconnected_clients = []
         for user_id, websocket in self.connections.items():
             try:
-                await websocket.send_text(message)
-                logger.info(f"Messaggio inviato a User ID {user_id}: {message}")
+                if websocket.client_state != WebSocketState.DISCONNECTED:
+                    await websocket.send_text(message)
+                    logger.info(f"Messaggio inviato a User ID {user_id}: {message}")
+                else:
+                    disconnected_clients.append(user_id)
             except WebSocketDisconnect:
                 disconnected_clients.append(user_id)
                 logger.warning(f"Client con User ID {user_id} disconnesso durante il broadcast.")
@@ -90,10 +93,34 @@ class ConnectionManager:
             logger.info(f"Rimosso client disconnesso con User ID: {user_id}")
 
 
+        # Rimuovere i client disconnessi
+        for user_id in disconnected_clients:
+            del self.connections[user_id]
+            logger.info(f"Rimosso client disconnesso con User ID: {user_id}")
+    
+
+
+    async def send_message_to_user(self, user_id: int, message: str):
+        """
+        Invia un messaggio solo al WebSocket di un determinato utente.
+        """
+        if user_id in self.connections:
+            websocket = self.connections[user_id]
+            if websocket.client_state != WebSocketState.DISCONNECTED:
+                await websocket.send_text(message)
+                logger.info(f"Messaggio inviato a User ID {user_id}: {message}")
+            else:
+                logger.warning(f"WebSocket già disconnesso per User ID {user_id}. Messaggio non inviato.")
+        else:
+            logger.warning(f"Nessuna connessione trovata per User ID {user_id}.")
+
+
+
+
 # Istanza del gestore connessioni
 manager = ConnectionManager()
 
-@router.websocket("/ws/{user_id}/alerts")
+@router.websocket("/ws/{user_id}/notifications")
 async def websocket_alerts(websocket: WebSocket, user_id: int, db: Session = Depends(get_db)):
     logger.debug(f"Connessione WebSocket iniziata per {websocket.client.host}:{websocket.client.port} con User ID: {user_id}")
     
@@ -102,12 +129,8 @@ async def websocket_alerts(websocket: WebSocket, user_id: int, db: Session = Dep
     
     # Invio della notifica di login appena l'utente si connette
     alert_message = f"Utente {user_id} ha effettuato il login"
-    await manager.broadcast(f"Alert-System: {alert_message}")
-    # Alert-system ---> relativo a messagistica di sistema ( Login , Cambio di valori e update ) ( verde )
-    # Alert-info -----> relativo a attacchi non seri ( giallo )
-    # Alert-Warning ----> relativo ad attacchi seri ( rosso )
-    
-    
+    await manager.send_message_to_user(user_id, f"Alert-System: {alert_message}")  # Messaggio per il solo utente
+
     try:
         while True:
             data = await websocket.receive_json()
@@ -118,6 +141,9 @@ async def websocket_alerts(websocket: WebSocket, user_id: int, db: Session = Dep
     except Exception as e:
         logger.error(f"Errore durante la gestione del WebSocket: {e}")
         await websocket.close(code=4000)
+
+
+
 
 
 @router.post("/ws/{user_id}/disconnect")
