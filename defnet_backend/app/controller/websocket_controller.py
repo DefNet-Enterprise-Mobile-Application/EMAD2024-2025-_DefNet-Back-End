@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 import logging
 from service.user_service import get_user_by_id  # Importa la funzione per recuperare l'utente dal DB
 from database.database import get_db  # Funzione per ottenere il DB dalla sessione
-
+from models.notification_alert import Notifica
 router = APIRouter()
 
 # Configurazione logging per debug
@@ -100,14 +100,27 @@ class ConnectionManager:
     
 
 
-    async def send_message_to_user(self, user_id: int, message: str):
+    async def send_message_to_user(self, user_id: int, message: str, db: Session):
         """
         Invia un messaggio solo al WebSocket di un determinato utente.
         """
+        
         if user_id in self.connections:
             websocket = self.connections[user_id]
             if websocket.client_state != WebSocketState.DISCONNECTED:
-                await websocket.send_text(message)
+                # Salva la notifica nel database
+                nuova_notifica = Notifica.salva_notifica(session=db, tipo="Alert-System", descrizione=message)
+                 # Formatta il timestamp come giorno e ora
+                formatted_timestamp = nuova_notifica.timestamp_creazione.strftime('%d %B %Y, %H:%M')
+                print(f"Nuova notifica creata: {nuova_notifica}")
+                # Invia la notifica al frontend come JSON
+                await websocket.send_json({
+                    "id": nuova_notifica.id,
+                    "tipo": nuova_notifica.tipo,
+                    "descrizione": nuova_notifica.descrizione,
+                    "timestamp": formatted_timestamp,
+                    "stato": nuova_notifica.stato  # False = non letta
+                })
                 logger.info(f"Messaggio inviato a User ID {user_id}: {message}")
             else:
                 logger.warning(f"WebSocket già disconnesso per User ID {user_id}. Messaggio non inviato.")
@@ -129,7 +142,7 @@ async def websocket_alerts(websocket: WebSocket, user_id: int, db: Session = Dep
     
     # Invio della notifica di login appena l'utente si connette
     alert_message = f"Utente {user_id} ha effettuato il login"
-    await manager.send_message_to_user(user_id, f"Alert-System: {alert_message}")  # Messaggio per il solo utente
+    await manager.send_message_to_user(user_id, alert_message, db=db)  # Messaggio per il solo utente
 
     try:
         while True:
