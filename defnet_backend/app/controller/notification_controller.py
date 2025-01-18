@@ -1,31 +1,46 @@
 import logging
 from models.notification_alert import Notifica
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
-from controller.websocket_controller import ConnectionManager
-from database.database import SessionLocal  # Importa il tuo session manager per il DB
+from controller.websocket_controller import manager
+from database.database import SessionLocal, get_db  # Importa il tuo session manager per il DB
 
-manager = ConnectionManager()
+
 
 router = APIRouter()
 
 @router.post("/notify-alert")
-async def notify_alert(request: Request):
+async def notify_alert(request: Request, db: Session = Depends(get_db)):
     """
     Endpoint per ricevere notifiche dal NotificationManager e inviarle ai WebSocket appropriati.
     """
     try:
         alert_data = await request.json()
-        connection_type = alert_data.get("type", "alerts")  # Default "alerts"
-        
-        logging.info(f"Ricevuta notifica per {connection_type}: {alert_data}")
-        await manager.broadcast(alert_data, connection_type=connection_type)
-        
-        return JSONResponse(status_code=200, content={"message": f"Notifica inoltrata ai client {connection_type}."})
+        print(f"Alert_Data : {alert_data}")
+
+        events = alert_data.get("events", [])
+        if not events:
+            return JSONResponse(status_code=400, content={"error": "Nessun evento trovato nella notifica."})
+
+        for event in events:
+            alert_type = event.get("type", None)  # "alert" o "block"
+            if not alert_type or alert_type not in ["alert", "block"]:
+                logging.warning(f"Tipo di notifica non valido per l'evento: {event}")
+                continue
+
+            # Log della notifica ricevuta
+            logging.info(f"Ricevuta notifica di tipo {alert_type}: {event}")
+
+            # Richiama il metodo di broadcasting per ogni evento
+            await manager.broadcast(event, alert_type, db)
+
+        return JSONResponse(status_code=200, content={"message": f"{len(events)} notifiche elaborate correttamente."})
     except Exception as e:
         logging.error(f"Errore nella gestione della notifica: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+
 
 # aggiornare lo stato di una notifica
 @router.put("/notification_alert/{notification_id}/update-notification")

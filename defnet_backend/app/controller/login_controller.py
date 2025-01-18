@@ -11,8 +11,6 @@ from database.database import get_db
 # Import Payload - Request 
 from controller.payload.request.login_request import LoginRequest
 
-# Import MQTT Client
-from mqtt.mqtt_login import publish_mqtt_message
 
 #Import funzione di jwt
 from service.jwt_service import extract_username_from_token  
@@ -21,14 +19,9 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
-# Definizione dei topic MQTT
-MQTT_TOPIC_SUCCESS = "user/login/success"
-MQTT_TOPIC_FAIL = "user/login/fail"
-
 # Endpoint di login con controlli specifici
 # Utilizzare un oggetto LoginRequest - oggetto di Login per effettuare il Login 
 # Oggetto Session - sincronizzazione del Db con oggetti ORM 
-
 @router.post("/login")
 def login(loginPayload: LoginRequest, request: Request, db: Session = Depends(get_db)):
     try:

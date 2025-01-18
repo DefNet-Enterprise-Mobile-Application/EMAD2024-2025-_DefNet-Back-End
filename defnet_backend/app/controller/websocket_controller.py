@@ -70,34 +70,48 @@ class ConnectionManager:
         except Exception as e:
             logger.error(f"Errore durante la disconnessione del WebSocket per User ID {user_id}: {e}")
 
-    async def broadcast(self, message: str):
+    async def broadcast(self, alert_data: dict, alert_type: str, db: Session):
         """
-        Invia un messaggio a tutte le connessioni attive.
+        Salva la notifica nel database e invia un messaggio a tutte le connessioni attive.
         """
-        logger.debug(f"Broadcasting messaggio a {len(self.connections)} connessioni attive.")
-        disconnected_clients = []
-        for user_id, websocket in self.connections.items():
-            try:
-                if websocket.client_state != WebSocketState.DISCONNECTED:
-                    await websocket.send_text(message)
-                    logger.info(f"Messaggio inviato a User ID {user_id}: {message}")
-                else:
+        try:
+            # Salva la notifica nel database
+            nuova_notifica = Notifica.salva_notifica(
+                session=db,
+                tipo=alert_type,
+                descrizione=alert_data.get("description", "Nessuna descrizione fornita.")
+            )
+            formatted_timestamp = nuova_notifica.timestamp_creazione.strftime('%d %B %Y, %H:%M')
+
+            # Prepara il messaggio da inviare
+            notification_message = {
+                "id": nuova_notifica.id,
+                "tipo": nuova_notifica.tipo,
+                "descrizione": nuova_notifica.descrizione,
+                "timestamp": formatted_timestamp,
+                "stato": nuova_notifica.stato  # False = non letta
+            }
+
+            # Invia la notifica a tutte le connessioni attive
+            disconnected_clients = []
+            for user_id, websocket in self.connections.items():
+                try:
+                    if websocket.client_state != WebSocketState.DISCONNECTED:
+                        await websocket.send_json(notification_message)
+                        logger.info(f"Notifica inviata a User ID {user_id}: {notification_message}")
+                    else:
+                        disconnected_clients.append(user_id)
+                except WebSocketDisconnect:
                     disconnected_clients.append(user_id)
-            except WebSocketDisconnect:
-                disconnected_clients.append(user_id)
-                logger.warning(f"Client con User ID {user_id} disconnesso durante il broadcast.")
+                    logger.warning(f"Client con User ID {user_id} disconnesso durante il broadcast.")
 
-        # Rimuovere i client disconnessi
-        for user_id in disconnected_clients:
-            del self.connections[user_id]
-            logger.info(f"Rimosso client disconnesso con User ID: {user_id}")
+            # Rimuovere i client disconnessi
+            for user_id in disconnected_clients:
+                del self.connections[user_id]
+                logger.info(f"Rimosso client disconnesso con User ID: {user_id}")
+        except Exception as e:
+            logger.error(f"Errore durante il broadcast: {e}")
 
-
-        # Rimuovere i client disconnessi
-        for user_id in disconnected_clients:
-            del self.connections[user_id]
-            logger.info(f"Rimosso client disconnesso con User ID: {user_id}")
-    
 
 
     async def send_message_to_user(self, user_id: int, message: str, db: Session):
@@ -109,7 +123,7 @@ class ConnectionManager:
             websocket = self.connections[user_id]
             if websocket.client_state != WebSocketState.DISCONNECTED:
                 # Salva la notifica nel database
-                nuova_notifica = Notifica.salva_notifica(session=db, tipo="Alert-System", descrizione=message)
+                nuova_notifica = Notifica.salva_notifica(session=db, tipo="system", descrizione=message)
                  # Formatta il timestamp come giorno e ora
                 formatted_timestamp = nuova_notifica.timestamp_creazione.strftime('%d %B %Y, %H:%M')
                 print(f"Nuova notifica creata: {nuova_notifica}")
