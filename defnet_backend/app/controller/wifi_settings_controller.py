@@ -147,7 +147,7 @@ async def update_wifi_settings(settings: WifiSettings):
         set_password(settings.password)
 
         subprocess.run(['uci', 'commit'], check=True)
-        subprocess.run(['wifi'], check=True)  # Ricarica le configurazioni Wi-Fi
+        #subprocess.run(['wifi'], check=True)  # Ricarica le configurazioni Wi-Fi
         # Aggiorna IP del gateway LAN (se applicabile)        
         return {"status": "success", "message": "Impostazioni Wi-Fi aggiornate con successo."}
     
