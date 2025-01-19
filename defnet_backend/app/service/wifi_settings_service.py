@@ -26,7 +26,54 @@ def set_ssid(new_ssid):
     return set_uci_value("wireless.@wifi-iface[1].ssid", new_ssid)
 
 def get_encryption():
-    return get_uci_value("wireless.@wifi-iface[1].encryption")
+    raw_encryption = get_uci_value("wireless.@wifi-iface[1].encryption")
+    return map_encryption_type(raw_encryption)
+
+
+
+def map_encryption_type(encryption):
+    encryption_mapping = {
+        # WEP
+        "wep": "WEP",
+        "wep+open": "WEP",
+        "wep+shared": "WEP",
+
+        # WPA
+        "psk": "WPA",
+        "psk+ccmp": "WPA",
+        "psk+aes": "WPA",
+        "psk+tkip": "WPA",
+        "psk+tkip+ccmp": "WPA",
+        "psk+tkip+aes": "WPA",
+        "psk-mixed": "WPA",
+        "psk-mixed+ccmp": "WPA",
+        "psk-mixed+aes": "WPA",
+        "psk-mixed+tkip": "WPA",
+        "psk-mixed+tkip+ccmp": "WPA",
+        "psk-mixed+tkip+aes": "WPA",
+
+        # WPA2
+        "psk2": "WPA2",
+        "psk2+ccmp": "WPA2",
+        "psk2+aes": "WPA2",
+        "psk2+tkip": "WPA2",
+        "psk2+tkip+ccmp": "WPA2",
+        "psk2+tkip+aes": "WPA2",
+
+        # WPA3
+        "sae": "WPA3",
+        "sae-mixed": "WPA3",
+        "wpa3": "WPA3",
+        "wpa3-mixed": "WPA3",
+
+        # Opportunistic Wireless Encryption (OWE)
+        "owe": "WPA3",
+
+        # Nessuna autenticazione
+        "none": "None",
+    }
+    return encryption_mapping.get(encryption, "Unknown")
+
 
 def set_encryption(new_encryption):
     return set_uci_value("wireless.@wifi-iface[1].encryption", new_encryption)
