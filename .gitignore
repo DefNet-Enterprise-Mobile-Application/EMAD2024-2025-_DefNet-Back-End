@@ -1,8 +1,8 @@
-/env/*
-
-# Exclude test.db
-test.db
-
-
-
+# Ignore Python cache files
+__pycache__/
 *.pyc
+
+# Ignore SQLite database files
+*.db
+
+/env/
