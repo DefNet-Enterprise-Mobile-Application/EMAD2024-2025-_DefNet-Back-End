@@ -1,13 +1,11 @@
-/env/*
+# Ignore Python cache files
 /defnetenv/*
 # Exclude compiled Python files
 *.pyc
-*.pyo
-*.pyd
 
+# Ignore SQLite database files
+*.db
 # Exclude __pycache__ directories
 __pycache__/*
 .idea/*
-
-# Exclude test.db
-./app/test.db
+/env/

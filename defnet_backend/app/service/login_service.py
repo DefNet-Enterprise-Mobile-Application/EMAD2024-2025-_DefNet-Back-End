@@ -1,5 +1,3 @@
-# login_service.py
-
 from datetime import timedelta
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
@@ -63,7 +61,7 @@ def login_user(loginPayload: LoginRequest, db: Session):
     # Aggiorna il token precedente nell'utente (opzionale)
     db_user.previous_token = access_token
     
-    print("Login successful")
+    #print("Login successful")
     return {
         "message": "Login successful!",
         "access_token": access_token,
