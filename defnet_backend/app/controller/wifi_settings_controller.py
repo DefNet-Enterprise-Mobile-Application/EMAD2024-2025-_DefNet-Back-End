@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 import os, subprocess
 from service.wifi_settings_service import get_ssid, set_ssid, get_encryption, set_encryption, get_password, set_password, get_lan_ip
-
+from models.wifi_settings import WifiSettings
 router = APIRouter()
 
 def get_wireless_interfaces():
@@ -130,32 +130,26 @@ async def get_wifi_settings():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/wifi/settings/ssid")
-async def update_ssid(new_ssid: str):
+# Endpoint PUT per aggiornare le impostazioni Wi-Fi
+@router.put("/wifi/settings")
+async def update_wifi_settings(settings: WifiSettings):
     """
-    Modifica l'SSID della rete Wi-Fi.
+    Modifica le impostazioni Wi-Fi (SSID, encryption, password e IP del gateway LAN).
     """
     try:
-        return set_ssid(new_ssid)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Aggiorna SSID
+        set_ssid(settings.ssid)
+        
+        # Aggiorna la modalità di crittografia (con mapping inverso)
+        set_encryption(settings.encryption)
+        
+        # Aggiorna la password Wi-Fi
+        set_password(settings.password)
 
-@router.put("/wifi/settings/encryption")
-async def update_encryption(new_encryption: str):
-    """
-    Modifica la modalità di crittografia della rete Wi-Fi.
-    """
-    try:
-        return set_encryption(new_encryption)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.put("/wifi/settings/password")
-async def update_password(new_password: str):
-    """
-    Modifica la password della rete Wi-Fi.
-    """
-    try:
-        return set_password(new_password)
+        subprocess.run(['uci', 'commit'], check=True)
+        subprocess.run(['wifi'], check=True)  # Ricarica le configurazioni Wi-Fi
+        # Aggiorna IP del gateway LAN (se applicabile)        
+        return {"status": "success", "message": "Impostazioni Wi-Fi aggiornate con successo."}
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

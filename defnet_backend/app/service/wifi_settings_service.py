@@ -12,8 +12,6 @@ def get_uci_value(config_path):
 def set_uci_value(config_path, value):
     try:
         subprocess.run(['uci', 'set', f'{config_path}={value}'], check=True)
-        subprocess.run(['uci', 'commit'], check=True)
-        subprocess.run(['wifi'], check=True)  # Ricarica le configurazioni Wi-Fi
         return {"status": "success", "message": f"{config_path} aggiornato con successo"}
     except subprocess.CalledProcessError as e:
         raise Exception(f"Errore durante l'aggiornamento di {config_path}: {str(e)}")
@@ -75,8 +73,22 @@ def map_encryption_type(encryption):
     return encryption_mapping.get(encryption, "Unknown")
 
 
+# Funzione di mapping inverso per la crittografia
+def reverse_encryption_mapping(encryption_type):
+    encryption_reverse_mapping = {
+        "WEP": "wep",  # WEP
+        "WPA": "psk",  # WPA (la modalità più semplice)
+        "WPA2": "psk2",  # WPA2 (più sicuro di WPA)
+        "WPA3": "sae",  # WPA3 (più sicuro di WPA2)
+        "None": "none",  # Nessuna crittografia
+    }
+    # Restituisce il valore di crittografia più semplice disponibile
+    return encryption_reverse_mapping.get(encryption_type, "none")
+
+
 def set_encryption(new_encryption):
-    return set_uci_value("wireless.@wifi-iface[1].encryption", new_encryption)
+    raw_encryption = reverse_encryption_mapping(new_encryption)
+    return set_uci_value("wireless.@wifi-iface[1].encryption", raw_encryption)
 
 def get_password():
     return get_uci_value("wireless.@wifi-iface[1].key")
