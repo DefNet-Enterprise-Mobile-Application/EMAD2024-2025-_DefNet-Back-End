@@ -1,8 +1,11 @@
 # Ignore Python cache files
-__pycache__/
+/defnetenv/*
+# Exclude compiled Python files
 *.pyc
 
 # Ignore SQLite database files
 *.db
-
+# Exclude __pycache__ directories
+__pycache__/*
+.idea/*
 /env/
