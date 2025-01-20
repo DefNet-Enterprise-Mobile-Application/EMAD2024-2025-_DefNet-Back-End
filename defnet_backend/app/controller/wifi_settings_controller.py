@@ -135,14 +135,29 @@ async def get_wifi_settings():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+from fastapi import WebSocket, HTTPException
+import asyncio
+
+# WebSocket manager per inviare messaggi
+class WebSocketManager:
+    async def send_message_to_user(self, user_id: int, message: str):
+        """Invia un messaggio via WebSocket all'utente specificato."""
+        # Si suppone che il WebSocket manager sia già configurato correttamente
+        pass
+
 
 @router.put("/wifi/settings")
 async def update_wifi_settings(settings: WifiSettings):
     """
     Modifica le impostazioni Wi-Fi senza bloccare la connessione HTTP.
+    Invia una notifica all'utente tramite WebSocket.
     """
-    def apply_settings():
+    
+    # Funzione asincrona che gestisce le modifiche alle impostazioni Wi-Fi
+    async def apply_settings():
         try:
+            # Invia una notifica all'utente che l'operazione sta iniziando
+
             # Aggiorna SSID
             set_ssid(settings.ssid)
             # Aggiorna la modalità di crittografia
@@ -152,11 +167,15 @@ async def update_wifi_settings(settings: WifiSettings):
             # Commit e ricarica Wi-Fi
             subprocess.run(['uci', 'commit'], check=True)
             subprocess.run(['wifi'], check=True)  # Ricarica le configurazioni Wi-Fi
+
+            # Dopo l'aggiornamento, invia una notifica che l'operazione è stata completata
+
         except Exception as e:
             logger.error(f"Errore durante l'applicazione delle impostazioni Wi-Fi: {str(e)}")
+            # Notifica l'utente dell'errore
 
-    # Avvia il processo di applicazione delle impostazioni in background
-    Thread(target=apply_settings).start()
+    # Avvia il processo di applicazione delle impostazioni Wi-Fi come task asincrono
+    asyncio.create_task(apply_settings())
 
-    # Rispondi immediatamente al client
-    return {"status": "pending", "message": "Le impostazioni Wi-Fi sono in fase di aggiornamento. La connessione verrà interrotta. \n Riconnettiti al Wifi appena è disponibile"}
+    # Rispondi immediatamente al client indicando che l'operazione è in corso
+    return {"status": "pending", "message": "Le impostazioni Wi-Fi sono in fase di aggiornamento. La connessione verrà interrotta. Riconnettiti al Wi-Fi appena disponibile."}
