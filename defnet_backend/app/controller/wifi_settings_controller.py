@@ -1,7 +1,13 @@
+from asyncio.log import logger
 from fastapi import APIRouter, HTTPException
 import os, subprocess
 from service.wifi_settings_service import get_ssid, set_ssid, get_encryption, set_encryption, get_password, set_password, get_lan_ip
 from models.wifi_settings import WifiSettings
+from websocket_controller import manager
+from threading import Thread
+
+
+
 router = APIRouter()
 
 def get_wireless_interfaces():
@@ -130,26 +136,28 @@ async def get_wifi_settings():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Endpoint PUT per aggiornare le impostazioni Wi-Fi
+
 @router.put("/wifi/settings")
 async def update_wifi_settings(settings: WifiSettings):
     """
-    Modifica le impostazioni Wi-Fi (SSID, encryption, password e IP del gateway LAN).
+    Modifica le impostazioni Wi-Fi senza bloccare la connessione HTTP.
     """
-    try:
-        # Aggiorna SSID
-        set_ssid(settings.ssid)
-        
-        # Aggiorna la modalità di crittografia (con mapping inverso)
-        set_encryption(settings.encryption)
-        
-        # Aggiorna la password Wi-Fi
-        set_password(settings.password)
+    def apply_settings():
+        try:
+            # Aggiorna SSID
+            set_ssid(settings.ssid)
+            # Aggiorna la modalità di crittografia
+            set_encryption(settings.encryption)
+            # Aggiorna la password Wi-Fi
+            set_password(settings.password)
+            # Commit e ricarica Wi-Fi
+            subprocess.run(['uci', 'commit'], check=True)
+            subprocess.run(['wifi'], check=True)  # Ricarica le configurazioni Wi-Fi
+        except Exception as e:
+            logger.error(f"Errore durante l'applicazione delle impostazioni Wi-Fi: {str(e)}")
 
-        subprocess.run(['uci', 'commit'], check=True)
-        #subprocess.run(['wifi'], check=True)  # Ricarica le configurazioni Wi-Fi
-        # Aggiorna IP del gateway LAN (se applicabile)        
-        return {"status": "success", "message": "Impostazioni Wi-Fi aggiornate con successo."}
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # Avvia il processo di applicazione delle impostazioni in background
+    Thread(target=apply_settings).start()
+
+    # Rispondi immediatamente al client
+    return {"status": "pending", "message": "Le impostazioni Wi-Fi sono in fase di aggiornamento. La connessione verrà interrotta. \n Riconnettiti al Wifi appena è disponibile"}

@@ -162,6 +162,7 @@ async def websocket_alerts(websocket: WebSocket, user_id: int, db: Session = Dep
         while True:
             data = await websocket.receive_json()
             # Gestisci i dati ricevuti...
+            
     except WebSocketDisconnect:
         logger.info(f"Disconnessione WebSocket da {websocket.client.host}:{websocket.client.port}")
         await manager.disconnect(websocket=websocket, user_id=user_id)
