@@ -3,7 +3,6 @@ from fastapi import APIRouter, HTTPException
 import os, subprocess
 from service.wifi_settings_service import get_ssid, set_ssid, get_encryption, set_encryption, get_password, set_password, get_lan_ip
 from models.wifi_settings import WifiSettings
-from websocket_controller import manager
 from threading import Thread
 
 
