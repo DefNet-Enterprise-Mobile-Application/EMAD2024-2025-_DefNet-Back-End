@@ -178,4 +178,4 @@ async def update_wifi_settings(settings: WifiSettings):
     asyncio.create_task(apply_settings())
 
     # Rispondi immediatamente al client indicando che l'operazione è in corso
-    return {"status": "pending", "message": "Le impostazioni Wi-Fi sono in fase di aggiornamento. La connessione verra' interrotta. Riconnettiti al Wi-Fi appena disponibile."}
+    return {"status": "pending", "message": "Le impostazioni Wi-Fi sono in fase di aggiornamento. La connessione verra\' interrotta. Riconnettiti al Wi-Fi appena disponibile."}
