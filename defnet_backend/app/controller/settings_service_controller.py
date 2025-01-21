@@ -92,3 +92,15 @@ async def toggle_service(service_name: str, service_request: ServiceRequest, db:
 
     # Risposta di successo
     return {"message": f"Service '{service_name}' has been {'enabled' if service_request.enabled else 'disabled'} successfully."}
+
+
+
+@router.get("/services", response_model=Dict[str, bool])
+async def get_services_status():
+    """
+    Restituisce lo stato di tutti i servizi operativi.
+    """
+    try:
+        return services_db
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Errore nel recupero degli stati dei servizi: {e}")
