@@ -1,7 +1,11 @@
 import subprocess
-from fastapi import APIRouter, FastAPI, HTTPException
+from fastapi import APIRouter, Depends, FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict
+from requests import Session
+from controller.websocket_controller import manager
+from database.database import get_db
+
 
 router = APIRouter()
 
@@ -33,6 +37,11 @@ def start_ids_ips():
         print(f"Error starting IDS-IPS: {e}")
         raise HTTPException(status_code=500, detail="Error starting IDS-IPS")
 
+
+
+# TODO : Inserisci un oggetto per l'invio delle notifiche 
+# TODO : Modifca la gestione della notifica 
+
 # Funzione per fermare IDS-IPS
 def stop_ids_ips():
     try:
@@ -51,7 +60,7 @@ def stop_ids_ips():
 
 # Endpoint per attivare/disattivare i servizi
 @router.put("/services/{service_name}")
-async def toggle_service(service_name: str, service_request: ServiceRequest):
+async def toggle_service(service_name: str, service_request: ServiceRequest, db: Session = Depends(get_db)):
     # Verifica se il servizio esiste
     if service_name not in services_db:
         raise HTTPException(status_code=404, detail="Service not found")
@@ -69,6 +78,17 @@ async def toggle_service(service_name: str, service_request: ServiceRequest):
             start_ids_ips()  # Avvia IDS-IPS
         else:
             stop_ids_ips()  # Ferma IDS-IPS
+
+
+     # Prepara i dati di alert per il broadcast
+    alert_data = {
+        "serviceName": service_name,
+        "newStatus": service_request.enabled,
+        "description": f"Il servizio {service_name} è stato {'attivato' if service_request.enabled else 'disattivato'}.",
+    }
+
+    # Invia un messaggio di broadcast
+    await manager.broadcast(alert_data, alert_type="serviceStatusChange", db=db)
 
     # Risposta di successo
     return {"message": f"Service '{service_name}' has been {'enabled' if service_request.enabled else 'disabled'} successfully."}

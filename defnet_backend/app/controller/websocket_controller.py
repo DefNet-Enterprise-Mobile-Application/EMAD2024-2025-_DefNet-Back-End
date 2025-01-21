@@ -92,6 +92,14 @@ class ConnectionManager:
                 "stato": nuova_notifica.stato  # False = non letta
             }
 
+
+            # Aggiungi i dati del servizio, se presenti
+            if alert_type == "serviceStatusChange":
+                notification_message.update({
+                    "serviceName": alert_data.get("serviceName", "Unknown"),
+                    "newStatus": alert_data.get("newStatus", False),
+                })
+
             # Invia la notifica a tutte le connessioni attive
             disconnected_clients = []
             for user_id, websocket in self.connections.items():
@@ -162,7 +170,7 @@ async def websocket_alerts(websocket: WebSocket, user_id: int, db: Session = Dep
         while True:
             data = await websocket.receive_json()
             # Gestisci i dati ricevuti...
-            
+
     except WebSocketDisconnect:
         logger.info(f"Disconnessione WebSocket da {websocket.client.host}:{websocket.client.port}")
         await manager.disconnect(websocket=websocket, user_id=user_id)
