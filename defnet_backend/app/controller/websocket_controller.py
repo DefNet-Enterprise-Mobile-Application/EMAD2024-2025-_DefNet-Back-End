@@ -123,7 +123,7 @@ class ConnectionManager:
             websocket = self.connections[user_id]
             if websocket.client_state != WebSocketState.DISCONNECTED:
                 # Salva la notifica nel database
-                nuova_notifica = Notifica.salva_notifica(session=db, tipo="system", descrizione=message)
+                nuova_notifica = Notifica.salva_notifica(session=db, tipo="system", descrizione=message, user_id=user_id)
                  # Formatta il timestamp come giorno e ora
                 formatted_timestamp = nuova_notifica.timestamp_creazione.strftime('%d %B %Y, %H:%M')
                 print(f"Nuova notifica creata: {nuova_notifica}")
@@ -133,7 +133,8 @@ class ConnectionManager:
                     "tipo": nuova_notifica.tipo,
                     "descrizione": nuova_notifica.descrizione,
                     "timestamp": formatted_timestamp,
-                    "stato": nuova_notifica.stato  # False = non letta
+                    "stato": nuova_notifica.stato,  # False = non letta
+                    "user_id": nuova_notifica.user_id
                 })
                 logger.info(f"Messaggio inviato a User ID {user_id}: {message}")
             else:

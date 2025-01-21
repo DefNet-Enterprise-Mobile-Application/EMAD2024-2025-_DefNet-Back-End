@@ -6,8 +6,6 @@ from sqlalchemy.orm import Session
 from controller.websocket_controller import manager
 from database.database import SessionLocal, get_db  # Importa il tuo session manager per il DB
 
-
-
 router = APIRouter()
 
 @router.post("/notify-alert")
