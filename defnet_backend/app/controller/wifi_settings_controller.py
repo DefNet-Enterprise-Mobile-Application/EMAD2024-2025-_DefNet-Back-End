@@ -1,7 +1,11 @@
 from fastapi import APIRouter, HTTPException
 import os, subprocess
 from service.wifi_settings_service import get_ssid, set_ssid, get_encryption, set_encryption, get_password, set_password, get_lan_ip
-
+import qrcode
+from qrcode.image.pil import PilImage
+from service.wifi_settings_service import get_ssid, get_encryption, get_password
+from io import BytesIO
+import base64
 router = APIRouter()
 
 def get_wireless_interfaces():
@@ -157,5 +161,32 @@ async def update_password(new_password: str):
     """
     try:
         return set_password(new_password)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def generate_wifi_qr(ssid: str, encryption: str, password: str):
+    wifi_string = f"WIFI:T:{encryption};S:{ssid};P:{password};;"
+    qr = qrcode.make(wifi_string)
+    buffer = BytesIO()
+    qr.save(buffer, format="PNG")
+    buffer.seek(0)
+    return base64.b64encode(buffer.getvalue()).decode()
+
+@router.get("/wifi/qr")
+async def get_wifi_qr():
+    """
+    Genera un QR code per la rete Wi-Fi basato sulle impostazioni attuali.
+    """
+    try:
+        ssid = get_ssid()
+        encryption = get_encryption()
+        password = get_password()
+
+        if not ssid or not encryption or not password:
+            raise HTTPException(status_code=400, detail="Impossibile ottenere le impostazioni Wi-Fi")
+
+        qr_code_base64 = generate_wifi_qr(ssid, encryption, password)
+        return {"qr_code": qr_code_base64}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
