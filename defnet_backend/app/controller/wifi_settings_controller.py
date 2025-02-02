@@ -3,7 +3,8 @@ from fastapi import APIRouter, HTTPException
 import os, subprocess
 from service.wifi_settings_service import get_ssid, set_ssid, get_encryption, set_encryption, get_password, set_password, get_lan_ip
 from models.wifi_settings import WifiSettings
-from threading import Thread
+from fastapi import  HTTPException
+import asyncio
 
 
 
@@ -135,15 +136,7 @@ async def get_wifi_settings():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-from fastapi import WebSocket, HTTPException
-import asyncio
 
-# WebSocket manager per inviare messaggi
-class WebSocketManager:
-    async def send_message_to_user(self, user_id: int, message: str):
-        """Invia un messaggio via WebSocket all'utente specificato."""
-        # Si suppone che il WebSocket manager sia già configurato correttamente
-        pass
 
 
 @router.put("/wifi/settings")
@@ -152,7 +145,6 @@ async def update_wifi_settings(settings: WifiSettings):
     Modifica le impostazioni Wi-Fi senza bloccare la connessione HTTP.
     Invia una notifica all'utente tramite WebSocket.
     """
-    
     # Funzione asincrona che gestisce le modifiche alle impostazioni Wi-Fi
     async def apply_settings():
         try:
