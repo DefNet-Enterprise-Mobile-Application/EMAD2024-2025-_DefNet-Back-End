@@ -18,13 +18,13 @@ def set_uci_value(config_path, value):
 
 # Servizi specifici
 def get_ssid():
-    return get_uci_value("wireless.@wifi-iface[1].ssid")
+    return get_uci_value("wireless.@wifi-iface[0].ssid")
 
 def set_ssid(new_ssid):
-    return set_uci_value("wireless.@wifi-iface[1].ssid", new_ssid)
+    return set_uci_value("wireless.@wifi-iface[0].ssid", new_ssid)
 
 def get_encryption():
-    raw_encryption = get_uci_value("wireless.@wifi-iface[1].encryption")
+    raw_encryption = get_uci_value("wireless.@wifi-iface[0].encryption")
     return map_encryption_type(raw_encryption)
 
 
