@@ -30,6 +30,7 @@ app.include_router(logout_controller.router)
 app.include_router(speed_test_controller.router)
 
 app.include_router(notification_controller.router)
+app.include_router(wifi_settings_controller.router)
 
 app.include_router(settings_service_controller.router)
 
