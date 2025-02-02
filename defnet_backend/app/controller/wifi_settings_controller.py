@@ -2,6 +2,7 @@ from asyncio.log import logger
 from fastapi import APIRouter, HTTPException
 import os, subprocess
 from service.wifi_settings_service import get_ssid, set_ssid, get_encryption, set_encryption, get_password, set_password, get_lan_ip
+import qrcode
 from qrcode.image.pil import PilImage
 from service.wifi_settings_service import get_ssid, get_encryption, get_password
 from io import BytesIO
