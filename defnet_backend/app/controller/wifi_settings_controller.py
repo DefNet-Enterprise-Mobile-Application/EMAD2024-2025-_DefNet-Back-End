@@ -187,6 +187,30 @@ async def get_wifi_qr():
             raise HTTPException(status_code=400, detail="Impossibile ottenere le impostazioni Wi-Fi")
 
         qr_code_base64 = generate_wifi_qr(ssid, encryption, password)
+        print(qr_code_base64)
         return {"qr_code": qr_code_base64}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+
+# Controlla tale metodo per l'inserimento dei dati di mock del tuo wifi 
+@router.get("/wifi/qr_test")
+async def get_wifi_qr_test():
+    """
+    Genera un QR code per la rete Wi-Fi basato sulle impostazioni attuali.
+    """
+    try:
+        ssid = get_ssid() # Modifica con il tuo SSID
+        encryption = get_encryption() # Modfifica la tua encryption
+        password = get_password() # Modifica della password 
+
+        if not ssid or not encryption or not password:
+            raise HTTPException(status_code=400, detail="Impossibile ottenere le impostazioni Wi-Fi")
+
+        qr_code_base64 = generate_wifi_qr(ssid, encryption, password)
+        print(qr_code_base64)
+        return {"qr_code": qr_code_base64}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
