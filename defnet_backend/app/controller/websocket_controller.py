@@ -12,9 +12,6 @@ router = APIRouter()
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-from fastapi import WebSocket
-from fastapi.websockets import WebSocketState
-
 class ConnectionManager:
     def __init__(self):
         self.connections: Dict[int, WebSocket] = {}
