@@ -12,13 +12,14 @@ class Notifica(Base):
     descrizione = Column(String(255), nullable=False)
     timestamp_creazione = Column(DateTime, default=datetime.utcnow)
     stato = Column(Boolean, default=False)  # False = non letta, True = letta
+    user_id = Column(Integer, nullable=True)  # Collega l'id utente (opzionale)
 
     def __repr__(self):
-        return f"<Notifica(tipo={self.tipo}, descrizione={self.descrizione}, stato={'letta' if self.stato else 'non letta'})>"
+        return f"<Notifica(tipo={self.tipo}, descrizione={self.descrizione}, stato={'letta' if self.stato else 'non letta'}, user_id={self.user_id})>"
     
     @classmethod
-    def salva_notifica(cls, session, tipo, descrizione):
-        nuova_notifica = cls(tipo=tipo, descrizione=descrizione)
+    def salva_notifica(cls, session, tipo, descrizione, user_id=None):
+        nuova_notifica = cls(tipo=tipo, descrizione=descrizione, user_id=user_id)
         session.add(nuova_notifica)
         session.commit()
         return nuova_notifica
