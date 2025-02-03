@@ -1,5 +1,5 @@
 import subprocess
-from fastapi import APIRouter, Depends, FastAPI, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Dict
 from requests import Session

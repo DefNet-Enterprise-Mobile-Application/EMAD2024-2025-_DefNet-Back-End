@@ -8,6 +8,9 @@ def get_uci_value(config_path):
     except subprocess.CalledProcessError as e:
         raise Exception(f"Errore durante il recupero di {config_path}: {str(e)}")
 
+
+
+
 # Servizio per impostare un valore UCI
 def set_uci_value(config_path, value):
     try:
@@ -16,16 +19,41 @@ def set_uci_value(config_path, value):
     except subprocess.CalledProcessError as e:
         raise Exception(f"Errore durante l'aggiornamento di {config_path}: {str(e)}")
 
-# Servizi specifici
+
+
+
+#### Get Wifi Settings Info ####
 def get_ssid():
     return get_uci_value("wireless.@wifi-iface[0].ssid")
 
-def set_ssid(new_ssid):
-    return set_uci_value("wireless.@wifi-iface[0].ssid", new_ssid)
 
 def get_encryption():
     raw_encryption = get_uci_value("wireless.@wifi-iface[0].encryption")
     return map_encryption_type(raw_encryption)
+
+def get_password():
+    return get_uci_value("wireless.@wifi-iface[0].key")
+
+def get_lan_ip():
+    return get_uci_value("network.lan.ipaddr")
+
+
+
+######  Set Info about settings Network  ######
+
+def set_encryption(new_encryption):
+    raw_encryption = reverse_encryption_mapping(new_encryption)
+    return set_uci_value("wireless.@wifi-iface[0].encryption", raw_encryption)
+
+def set_ssid(new_ssid):
+    return set_uci_value("wireless.@wifi-iface[0].ssid", new_ssid)
+
+def set_password(new_password):
+    return set_uci_value("wireless.@wifi-iface[0].key", new_password)
+
+
+
+
 
 
 
@@ -86,15 +114,4 @@ def reverse_encryption_mapping(encryption_type):
     return encryption_reverse_mapping.get(encryption_type, "none")
 
 
-def set_encryption(new_encryption):
-    raw_encryption = reverse_encryption_mapping(new_encryption)
-    return set_uci_value("wireless.@wifi-iface[1].encryption", raw_encryption)
 
-def get_password():
-    return get_uci_value("wireless.@wifi-iface[1].key")
-
-def set_password(new_password):
-    return set_uci_value("wireless.@wifi-iface[1].key", new_password)
-
-def get_lan_ip():
-    return get_uci_value("network.lan.ipaddr")
