@@ -31,7 +31,7 @@ import subprocess
 
 def start_ids_ips():
     try:
-        cmd = "nohup /bin/ash /root/Defnet-IDS-IPS/openwrt-ids-ips-production.sh start"
+        cmd = "/bin/ash ./openwrt-ids-ips-production.sh start"
         subprocess.run(cmd, shell=True, check=True)
         print("IDS-IPS started successfully.")
     except subprocess.CalledProcessError as e:
