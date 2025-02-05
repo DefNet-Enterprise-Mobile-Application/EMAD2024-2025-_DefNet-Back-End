@@ -31,7 +31,7 @@ services_db: Dict[str, bool] = {
 def start_ids_ips():
     try:
         # Esegui il comando per avviare IDS-IPS
-        subprocess.run(['/bin/ash', '/root/Defnet-IDS-IPS/openwrt-ids-ips-production.sh', 'start'], check=True)
+        subprocess.run(['/bin/ash', '/root/Defnet-IDS-IPS/./openwrt-ids-ips-production.sh', 'start'], check=True)
         print("IDS-IPS started successfully.")
     except subprocess.CalledProcessError as e:
         print(f"Error starting IDS-IPS: {e}")
