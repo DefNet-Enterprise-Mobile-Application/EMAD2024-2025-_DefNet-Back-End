@@ -2,16 +2,33 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from service.Report_service import ReportService
 from database.database import get_db
+from datetime import datetime
 from fastapi.responses import JSONResponse
-from datetime import datetime     
-from random import choice
 
 router = APIRouter()
 
-# Endpoint per ottenere il report giornaliero
+# 🔹 Endpoint per ottenere il report giornaliero
 @router.get("/report/daily")
-def get_daily_report(db: Session = Depends(get_db)):
-    return ReportService.get_daily_report(db)  # <-- Invocazione del service
+def get_daily_report(db: Session = Depends(get_db), date: str = None):
+    if date:
+        try:
+            date = datetime.strptime(date, "%Y-%m-%d").date()  # Converte la data da stringa a datetime
+        except ValueError:
+            return JSONResponse(status_code=400, content={"error": "Formato data non valido, usa YYYY-MM-DD"})
+    
+    return ReportService.get_daily_report(db, date)
+
+# 🔹 Endpoint per ottenere il report settimanale
+@router.get("/report/weekly")
+def get_weekly_report(db: Session = Depends(get_db), date: str = None):
+    if date:
+        try:
+            date = datetime.strptime(date, "%Y-%m-%d").date()  # Converte la data
+        except ValueError:
+            return JSONResponse(status_code=400, content={"error": "Formato data non valido, usa YYYY-MM-DD"})
+    
+    return ReportService.get_weekly_report(db, date)
+
 
 """'
 # Definisci i tipi di notifica
