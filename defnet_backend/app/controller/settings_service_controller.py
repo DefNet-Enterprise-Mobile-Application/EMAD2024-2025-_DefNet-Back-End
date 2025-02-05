@@ -27,15 +27,17 @@ services_db: Dict[str, bool] = {
 ################################### IDS and IPS Service #################################################
 
 
-# Funzione per avviare IDS-IPS
+import subprocess
+
 def start_ids_ips():
     try:
-        # Esegui il comando per avviare IDS-IPS
-        subprocess.run(['/bin/ash', '/root/Defnet-IDS-IPS/./openwrt-ids-ips-production.sh', 'start'], check=True)
+        cmd = "nohup /bin/ash /root/Defnet-IDS-IPS/openwrt-ids-ips-production.sh start"
+        subprocess.run(cmd, shell=True, check=True)
         print("IDS-IPS started successfully.")
     except subprocess.CalledProcessError as e:
         print(f"Error starting IDS-IPS: {e}")
         raise HTTPException(status_code=500, detail="Error starting IDS-IPS")
+
 
 
 
