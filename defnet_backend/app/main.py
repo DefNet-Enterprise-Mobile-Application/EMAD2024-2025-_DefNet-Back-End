@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from controller import login_controller, registration_controller, profile_controller
 from controller import logout_controller, speed_test_controller ,notification_controller,Report_controller
+from controller import wifi_settings_controller,settings_service_controller
 from controller.websocket_controller import router as websocket_router 
 
 from database.create_tables import create_database
@@ -19,12 +20,23 @@ app.include_router(websocket_router)
 
 # Include the routers
 app.include_router(login_controller.router)
+
 app.include_router(registration_controller.router)
+
 app.include_router(profile_controller.router) 
+
 app.include_router(logout_controller.router)
+
 app.include_router(speed_test_controller.router)
+
 app.include_router(notification_controller.router)
+
 app.include_router(Report_controller.router)
+
+app.include_router(settings_service_controller.router)
+
+app.include_router(wifi_settings_controller.router)
+
 
 # Configurazione CORS per il server locale
 app.add_middleware(

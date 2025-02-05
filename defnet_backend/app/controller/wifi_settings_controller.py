@@ -1,6 +1,17 @@
+from asyncio.log import logger
 from fastapi import APIRouter, HTTPException
 import os, subprocess
 from service.wifi_settings_service import get_ssid, set_ssid, get_encryption, set_encryption, get_password, set_password, get_lan_ip
+import qrcode
+from qrcode.image.pil import PilImage
+from service.wifi_settings_service import get_ssid, get_encryption, get_password
+from io import BytesIO
+import base64
+from models.wifi_settings import WifiSettings
+from fastapi import  HTTPException
+import asyncio
+
+
 
 router = APIRouter()
 
@@ -130,32 +141,87 @@ async def get_wifi_settings():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/wifi/settings/ssid")
-async def update_ssid(new_ssid: str):
-    """
-    Modifica l'SSID della rete Wi-Fi.
-    """
-    try:
-        return set_ssid(new_ssid)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/wifi/settings/encryption")
-async def update_encryption(new_encryption: str):
-    """
-    Modifica la modalità di crittografia della rete Wi-Fi.
-    """
-    try:
-        return set_encryption(new_encryption)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/wifi/settings/password")
-async def update_password(new_password: str):
+
+@router.put("/wifi/settings")
+async def update_wifi_settings(settings: WifiSettings):
     """
-    Modifica la password della rete Wi-Fi.
+    Modifica le impostazioni Wi-Fi senza bloccare la connessione HTTP.
+    Invia una notifica all'utente tramite WebSocket.
+    """
+
+    # Funzione asincrona che gestisce le modifiche alle impostazioni Wi-Fi
+    async def apply_settings():
+        try:
+            # Invia una notifica all'utente che l'operazione sta iniziando
+
+            # Aggiorna SSID
+            set_ssid(settings.ssid)
+            # Aggiorna la modalità di crittografia
+            set_encryption(settings.encryption)
+            # Aggiorna la password Wi-Fi
+            set_password(settings.password)
+            # Commit e ricarica Wi-Fi
+            subprocess.run(['uci', 'commit'], check=True)
+            subprocess.run(['wifi'], check=True)  # Ricarica le configurazioni Wi-Fi
+
+            # Dopo l'aggiornamento, invia una notifica che l'operazione è stata completata
+
+        except Exception as e:
+            logger.error(f"Errore durante l'applicazione delle impostazioni Wi-Fi: {str(e)}")
+            # Notifica l'utente dell'errore
+
+    # Avvia il processo di applicazione delle impostazioni Wi-Fi come task asincrono
+    asyncio.create_task(apply_settings())
+
+    # Rispondi immediatamente al client indicando che l'operazione è in corso
+    return {"status": "pending", "message": "Le impostazioni Wi-Fi sono in fase di aggiornamento. La connessione verra\' interrotta. Riconnettiti al Wi-Fi appena disponibile."}
+
+def generate_wifi_qr(ssid: str, encryption: str, password: str):
+    wifi_string = f"WIFI:T:{encryption};S:{ssid};P:{password};;"
+    qr = qrcode.make(wifi_string)
+    buffer = BytesIO()
+    qr.save(buffer, format="PNG")
+    buffer.seek(0)
+    return base64.b64encode(buffer.getvalue()).decode()
+
+@router.get("/wifi/qr")
+async def get_wifi_qr():
+    """
+    Genera un QR code per la rete Wi-Fi basato sulle impostazioni attuali.
     """
     try:
-        return set_password(new_password)
+        ssid = get_ssid()
+        encryption = get_encryption()
+        password = get_password()
+
+        if not ssid or not encryption or not password:
+            raise HTTPException(status_code=400, detail="Impossibile ottenere le impostazioni Wi-Fi")
+
+        qr_code_base64 = generate_wifi_qr(ssid, encryption, password)
+        print(qr_code_base64)
+        return {"qr_code": qr_code_base64}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+        
+# Controlla tale metodo per l'inserimento dei dati di mock del tuo wifi 
+@router.get("/wifi/qr_test")
+async def get_wifi_qr_test():
+    """
+    Genera un QR code per la rete Wi-Fi basato sulle impostazioni attuali.
+    """
+    try:
+        ssid = get_ssid() # Modifica con il tuo SSID
+        encryption = get_encryption() # Modfifica la tua encryption
+        password = get_password() # Modifica della password 
+
+        if not ssid or not encryption or not password:
+            raise HTTPException(status_code=400, detail="Impossibile ottenere le impostazioni Wi-Fi")
+
+        qr_code_base64 = generate_wifi_qr(ssid, encryption, password)
+        print(qr_code_base64)
+        return {"qr_code": qr_code_base64}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
