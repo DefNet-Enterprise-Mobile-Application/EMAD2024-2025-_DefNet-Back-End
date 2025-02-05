@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from service.Report_service import ReportService
-from CreaDBfake import get_db, SessionLocal
+from database.database import get_db
 from fastapi.responses import JSONResponse
 from datetime import datetime     
 from random import choice

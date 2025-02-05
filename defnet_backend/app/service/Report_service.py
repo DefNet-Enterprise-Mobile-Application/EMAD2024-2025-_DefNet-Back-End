@@ -19,25 +19,25 @@ class ReportService:
 
             # Aggiungi la logica di conteggio delle notifiche qui
             notification_counts = {
-                'InfoSystem': 0,
-                'AlertSystem': 0,
-                'WarningSystem': 0
+                'system': 0,
+                'alert': 0,
+                'block': 0
             }
 
             # Calcola il numero di notifiche per ogni tipo
             for notification in all_notifications:
-                if notification.tipo == 'InfoSystem':
-                    notification_counts['InfoSystem'] += 1
-                elif notification.tipo == 'AlertSystem':
-                    notification_counts['AlertSystem'] += 1
-                elif notification.tipo == 'WarningSystem':
-                    notification_counts['WarningSystem'] += 1
+                if notification.tipo == 'system':
+                    notification_counts['system'] += 1
+                elif notification.tipo == 'alert':
+                    notification_counts['alert'] += 1
+                elif notification.tipo == 'block':
+                    notification_counts['block'] += 1
 
             return {
                 "notifiche": [
-                    {"tipo": "InfoSystem", "count": notification_counts['InfoSystem']},
-                    {"tipo": "AlertSystem", "count": notification_counts['AlertSystem']},
-                    {"tipo": "WarningSystem", "count": notification_counts['WarningSystem']}
+                    {"tipo": "system", "count": notification_counts['system']},
+                    {"tipo": "alert", "count": notification_counts['alert']},
+                    {"tipo": "block", "count": notification_counts['block']}
                 ]
             }
 
