@@ -94,7 +94,7 @@ class ConnectionManager:
 
 
             # Aggiungi i dati del servizio, se presenti
-            if alert_type == "serviceStatusChange":
+            if alert_type == "service-changed":
                 notification_message.update({
                     "serviceName": alert_data.get("serviceName", "Unknown"),
                     "newStatus": alert_data.get("newStatus", False),

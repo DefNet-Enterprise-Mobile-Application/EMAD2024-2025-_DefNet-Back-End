@@ -18,7 +18,7 @@ class ServiceRequest(BaseModel):
 # Simulazione di un database dei servizi
 services_db: Dict[str, bool] = {
     "AD Block": True,
-    "IDS and IPS": False,
+    "IDS and IPS": True,
     "Parental Control": False,
     "VPN Protection": False,
 }
@@ -29,30 +29,30 @@ services_db: Dict[str, bool] = {
 
 import subprocess
 
-def start_ids_ips():
-    try:
-        cmd = "/bin/ash ./openwrt-ids-ips-production.sh start"
-        subprocess.run(cmd, shell=True, check=True)
-        print("IDS-IPS started successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error starting IDS-IPS: {e}")
-        raise HTTPException(status_code=500, detail="Error starting IDS-IPS")
+#def start_ids_ips():
+ #   try:
+  #      cmd = "/bin/ash ./openwrt-ids-ips-production.sh start"
+   #     subprocess.run(cmd, shell=True, check=True)
+    #    print("IDS-IPS started successfully.")
+    #except subprocess.CalledProcessError as e:
+     #   print(f"Error starting IDS-IPS: {e}")
+      #  raise HTTPException(status_code=500, detail="Error starting IDS-IPS")
 
 
 
 
 # TODO : Inserisci un oggetto per l'invio delle notifiche 
 # TODO : Modifca la gestione della notifica 
-
+# TODO : Cancel tutto il metodo 
 # Funzione per fermare IDS-IPS
-def stop_ids_ips():
-    try:
+#def stop_ids_ips():
+ #   try:
         # Esegui il comando per fermare IDS-IPS
-        subprocess.run(['/bin/ash', '/root/Defnet-IDS-IPS/openwrt-ids-ips-production.sh', 'stop'], check=True)
-        print("IDS-IPS stopped successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error stopping IDS-IPS: {e}")
-        raise HTTPException(status_code=500, detail="Error stopping IDS-IPS")
+  #      subprocess.run(['/bin/ash', '/root/Defnet-IDS-IPS/openwrt-ids-ips-production.sh', 'stop'], check=True)
+   #     print("IDS-IPS stopped successfully.")
+    #except subprocess.CalledProcessError as e:
+     #   print(f"Error stopping IDS-IPS: {e}")
+      #  raise HTTPException(status_code=500, detail="Error stopping IDS-IPS")
 
 
 ################################################## Parental Control Service ###################################################
@@ -106,11 +106,11 @@ async def toggle_service(service_name: str, service_request: ServiceRequest, db:
     services_db[service_name] = service_request.enabled
 
     # Gestisci l'IDS-IPS separatamente
-    if service_name == "IDS and IPS":
-        if service_request.enabled:
-            start_ids_ips()  # Avvia IDS-IPS
-        else:
-            stop_ids_ips()  # Ferma IDS-IPS
+    #if service_name == "IDS and IPS":
+     #   if service_request.enabled:
+      #      start_ids_ips()  # Avvia IDS-IPS
+       # else:
+        #    stop_ids_ips()  # Ferma IDS-IPS
 
 
     if service_name == "Parental Control":
@@ -129,7 +129,7 @@ async def toggle_service(service_name: str, service_request: ServiceRequest, db:
     }
 
     # Invia un messaggio di broadcast
-    await manager.broadcast(alert_data, alert_type="serviceStatusChange", db=db)
+    await manager.broadcast(alert_data, alert_type="service-changed", db=db)
 
     # Risposta di successo
     return {"message": f"Service '{service_name}' has been {'enabled' if service_request.enabled else 'disabled'} successfully."}
