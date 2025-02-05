@@ -14,8 +14,7 @@ class ReportService:
             # Stampa tutte le notifiche per debugging
             print("Tutte le notifiche nel database:")
             for notification in all_notifications:
-                print(f"ID: {notification.id}, Tipo: {notification.tipo}, Descrizione: {notification.descrizione}, "
-                      f"Timestamp: {notification.timestamp}, Stato: {notification.stato}, User ID: {notification.user_id}")
+                print(notification)
 
             # Aggiungi la logica di conteggio delle notifiche qui
             notification_counts = {
