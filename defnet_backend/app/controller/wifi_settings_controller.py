@@ -15,6 +15,10 @@ import asyncio
 
 router = APIRouter()
 
+import subprocess
+import os
+from fastapi import HTTPException
+
 def get_wireless_interfaces():
     try:
         result = subprocess.run(['iwinfo'], capture_output=True, text=True)
@@ -78,6 +82,26 @@ def get_network_stats():
             }
     return network_stats
 
+def get_assoclist(interface="phy1-ap0"):
+    """ Ottiene la lista degli associati da iwinfo """
+    assoclist = []
+    try:
+        result = subprocess.run(['iwinfo', interface, 'assoclist'], capture_output=True, text=True)
+        lines = result.stdout.splitlines()
+        for line in lines:
+            # Estrai MAC address e RSSI
+            if line:
+                parts = line.split()
+                mac = parts[0]
+                rssi = parts[1] if len(parts) > 1 else "N/A"
+                assoclist.append({
+                    "mac": mac,
+                    "rssi": rssi
+                })
+    except Exception as e:
+        print(f"Error getting assoclist: {e}")
+    return assoclist
+
 @router.get("/devices")
 async def get_connected_devices_controller():
     try:
@@ -87,8 +111,11 @@ async def get_connected_devices_controller():
         # Leggere i lease DHCP
         dhcp_devices = parse_dhcp_leases()
 
-        # Ottenere i dispositivi connessi
+        # Ottenere i dispositivi connessi tramite ARP
         arp_devices = get_connected_devices()
+
+        # Ottenere la lista degli associati
+        assoclist_devices = get_assoclist()
 
         # Ottenere statistiche di rete
         network_stats = get_network_stats()
@@ -102,21 +129,34 @@ async def get_connected_devices_controller():
                 "hostname": dhcp_device["hostname"],
                 "interface": "unknown",
                 "tx_bytes": "N/A",
-                "rx_bytes": "N/A"
+                "rx_bytes": "N/A",
+                "rssi": "N/A"
             }
+
+            # Confronto con i dispositivi associati
+            for assoc_device in assoclist_devices:
+                if dhcp_device["mac"] == assoc_device["mac"]:
+                    device_info["rssi"] = assoc_device["rssi"]
+                    break
+
+            # Confronto con i dispositivi ARP
             for arp_device in arp_devices:
                 if dhcp_device["mac"] == arp_device["mac"]:
                     device_info["interface"] = arp_device["interface"]
                     break
+
+            # Aggiungere le statistiche di rete
             if device_info["interface"] in network_stats:
                 device_info["tx_bytes"] = network_stats[device_info["interface"]].get("tx_bytes", "N/A")
                 device_info["rx_bytes"] = network_stats[device_info["interface"]].get("rx_bytes", "N/A")
+
             devices.append(device_info)
 
         return {"connected_devices": devices}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 
