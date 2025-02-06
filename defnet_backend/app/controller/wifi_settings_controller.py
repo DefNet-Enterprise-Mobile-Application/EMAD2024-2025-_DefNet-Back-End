@@ -19,68 +19,9 @@ import subprocess
 import os
 from fastapi import HTTPException
 
-def get_wireless_interfaces():
-    try:
-        result = subprocess.run(['iwinfo'], capture_output=True, text=True)
-        lines = result.stdout.splitlines()
-        interfaces = []
-        for line in lines:
-            if 'ESSID' in line:
-                interface = line.split()[0]
-                interfaces.append(interface)
-        return interfaces
-    except Exception as e:
-        print(f"Error getting wireless interfaces: {e}")
-        return []
-
-def get_connected_devices():
-    devices = []
-    try:
-        result = subprocess.run(['ip', 'neigh'], capture_output=True, text=True)
-        lines = result.stdout.splitlines()
-        for line in lines:
-            parts = line.split()
-            if len(parts) >= 5:
-                device = {
-                    "ip": parts[0],
-                    "mac": parts[4],
-                    "interface": parts[2]
-                }
-                devices.append(device)
-    except Exception as e:
-        print(f"Error getting connected devices: {e}")
-    return devices
-
-def parse_dhcp_leases(file_path="/tmp/dhcp.leases"):
-    leases = []
-    if os.path.exists(file_path):
-        with open(file_path, "r") as f:
-            for line in f:
-                parts = line.strip().split()
-                if len(parts) >= 4:
-                    lease = {
-                        "lease_time": parts[0],
-                        "mac": parts[1],
-                        "ip": parts[2],
-                        "hostname": parts[3]
-                    }
-                    leases.append(lease)
-    return leases
-
-def get_network_stats():
-    network_stats = {}
-    for interface in os.listdir('/sys/class/net/'):
-        stats_path = f"/sys/class/net/{interface}/statistics"
-        if os.path.exists(stats_path):
-            with open(os.path.join(stats_path, "tx_bytes"), "r") as f:
-                tx_bytes = f.read().strip()
-            with open(os.path.join(stats_path, "rx_bytes"), "r") as f:
-                rx_bytes = f.read().strip()
-            network_stats[interface] = {
-                "tx_bytes": tx_bytes,
-                "rx_bytes": rx_bytes
-            }
-    return network_stats
+import subprocess
+import os
+from fastapi import HTTPException
 
 def get_assoclist(interface="phy1-ap0"):
     """ Ottiene la lista degli associati da iwinfo """
@@ -102,53 +43,68 @@ def get_assoclist(interface="phy1-ap0"):
         print(f"Error getting assoclist: {e}")
     return assoclist
 
+def get_network_stats():
+    """ Ottenere le statistiche di rete come tx/rx bytes per interfaccia """
+    network_stats = {}
+    for interface in os.listdir('/sys/class/net/'):
+        stats_path = f"/sys/class/net/{interface}/statistics"
+        if os.path.exists(stats_path):
+            try:
+                with open(os.path.join(stats_path, "tx_bytes"), "r") as f:
+                    tx_bytes = f.read().strip()
+                with open(os.path.join(stats_path, "rx_bytes"), "r") as f:
+                    rx_bytes = f.read().strip()
+                network_stats[interface] = {
+                    "tx_bytes": tx_bytes,
+                    "rx_bytes": rx_bytes
+                }
+            except Exception as e:
+                print(f"Error reading network stats for {interface}: {e}")
+    return network_stats
+
+def get_device_name(ip):
+    """ Cerca il nome del dispositivo dato l'indirizzo IP utilizzando il comando `getent` """
+    try:
+        result = subprocess.run(['getent', 'hosts', ip], capture_output=True, text=True)
+        if result.returncode == 0:
+            # Estrarre il nome host dall'output
+            return result.stdout.split()[0]
+    except Exception as e:
+        print(f"Error getting device name for {ip}: {e}")
+    return "Unknown"
+
 @router.get("/devices")
 async def get_connected_devices_controller():
     try:
-        # Ottieni le interfacce wireless
-        wireless_interfaces = get_wireless_interfaces()
-
-        # Leggere i lease DHCP
-        dhcp_devices = parse_dhcp_leases()
-
-        # Ottenere i dispositivi connessi tramite ARP
-        arp_devices = get_connected_devices()
-
-        # Ottenere la lista degli associati
+        # Ottenere la lista degli associati (dispositivi connessi via Wi-Fi)
         assoclist_devices = get_assoclist()
 
-        # Ottenere statistiche di rete
+        # Ottenere statistiche di rete (tx/rx bytes)
         network_stats = get_network_stats()
 
-        # Combinare le informazioni
+        # Combinare le informazioni dei dispositivi
         devices = []
-        for dhcp_device in dhcp_devices:
+        for assoc_device in assoclist_devices:
             device_info = {
-                "ip": dhcp_device["ip"],
-                "mac": dhcp_device["mac"],
-                "hostname": dhcp_device["hostname"],
-                "interface": "unknown",
+                "mac": assoc_device["mac"],
+                "rssi": assoc_device["rssi"],
+                "interface": "unknown",  # L'interfaccia sarà identificata tramite le statistiche
                 "tx_bytes": "N/A",
                 "rx_bytes": "N/A",
-                "rssi": "N/A"
+                "hostname": "Unknown"  # Nome host inizialmente sconosciuto
             }
 
-            # Confronto con i dispositivi associati
-            for assoc_device in assoclist_devices:
-                if dhcp_device["mac"] == assoc_device["mac"]:
-                    device_info["rssi"] = assoc_device["rssi"]
-                    break
-
-            # Confronto con i dispositivi ARP
-            for arp_device in arp_devices:
-                if dhcp_device["mac"] == arp_device["mac"]:
-                    device_info["interface"] = arp_device["interface"]
-                    break
-
             # Aggiungere le statistiche di rete
-            if device_info["interface"] in network_stats:
-                device_info["tx_bytes"] = network_stats[device_info["interface"]].get("tx_bytes", "N/A")
-                device_info["rx_bytes"] = network_stats[device_info["interface"]].get("rx_bytes", "N/A")
+            for interface in network_stats:
+                if interface.startswith("phy1"):  # Associa l'interfaccia corretta, per esempio 'phy1-ap0'
+                    device_info["interface"] = interface
+                    device_info["tx_bytes"] = network_stats[interface].get("tx_bytes", "N/A")
+                    device_info["rx_bytes"] = network_stats[interface].get("rx_bytes", "N/A")
+                    break
+
+            # Cerca il nome del dispositivo tramite l'IP (se disponibile)
+            # Dato che i dispositivi connessi via Wi-Fi di solito hanno un IP sulla rete, potresti voler usare questo:
+            device_info["hostname"] = get_device_name(device_info["mac"])  # Aggiungi il nome host, se disponibile
 
             devices.append(device_info)
 
@@ -156,6 +112,7 @@ async def get_connected_devices_controller():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 
