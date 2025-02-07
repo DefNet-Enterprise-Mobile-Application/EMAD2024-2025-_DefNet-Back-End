@@ -24,15 +24,15 @@ def set_uci_value(config_path, value):
 
 #### Get Wifi Settings Info ####
 def get_ssid():
-    return get_uci_value("wireless.@wifi-iface[1].ssid")
+    return get_uci_value("wireless.@wifi-iface[0].ssid")
 
 
 def get_encryption():
-    raw_encryption = get_uci_value("wireless.@wifi-iface[1].encryption")
+    raw_encryption = get_uci_value("wireless.@wifi-iface[0].encryption")
     return map_encryption_type(raw_encryption)
 
 def get_password():
-    return get_uci_value("wireless.@wifi-iface[1].key")
+    return get_uci_value("wireless.@wifi-iface[0].key")
 
 def get_lan_ip():
     return get_uci_value("network.lan.ipaddr")
@@ -43,13 +43,13 @@ def get_lan_ip():
 
 def set_encryption(new_encryption):
     raw_encryption = reverse_encryption_mapping(new_encryption)
-    return set_uci_value("wireless.@wifi-iface[1].encryption", raw_encryption)
+    return set_uci_value("wireless.@wifi-iface[0].encryption", raw_encryption)
 
 def set_ssid(new_ssid):
-    return set_uci_value("wireless.@wifi-iface[1].ssid", new_ssid)
+    return set_uci_value("wireless.@wifi-iface[0].ssid", new_ssid)
 
 def set_password(new_password):
-    return set_uci_value("wireless.@wifi-iface[1].key", new_password)
+    return set_uci_value("wireless.@wifi-iface[0].key", new_password)
 
 
 
