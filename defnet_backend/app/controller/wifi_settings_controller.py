@@ -2,6 +2,7 @@ from asyncio.log import logger
 from fastapi import APIRouter, HTTPException
 import subprocess
 
+from fastapi.responses import JSONResponse
 from flask import jsonify
 from service.wifi_settings_service import get_ssid, set_ssid, get_encryption, set_encryption, get_password, set_password, get_lan_ip
 import qrcode
@@ -31,7 +32,7 @@ def get_connected_macs():
     mac_pattern = re.compile(r"([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})")
     macs = mac_pattern.findall(output)
     
-    # Rimuove eventuali duplicati e normalizza in minuscolo
+    # Rimuove duplicati e normalizza in minuscolo
     return list(set(mac.lower() for mac in macs))
 
 def get_dhcp_leases(leases_file="/tmp/dhcp.leases"):
@@ -60,9 +61,10 @@ def get_dhcp_leases(leases_file="/tmp/dhcp.leases"):
 @router.get('/connected-devices')
 def get_connected_devices():
     """
-    Controller endpoint per ottenere i dispositivi attualmente connessi.
-    Per ogni dispositivo trovato in 'iwinfo phy1-ap0 assoclist' cerca le informazioni (IP, hostname)
-    corrispondenti in /tmp/dhcp.leases.
+    Endpoint per ottenere i dispositivi attualmente connessi.
+    Per ciascun MAC trovato con 'iwinfo phy1-ap0 assoclist', cerca nel file DHCP (/tmp/dhcp.leases)
+    le informazioni (IP, hostname). Se non viene trovato il lease, viene indicato un errore.
+    Inoltre, per completezza, vengono inseriti dei placeholder per 'tx_bytes' e 'rx_bytes'.
     """
     connected_macs = get_connected_macs()
     dhcp_leases = get_dhcp_leases()
@@ -76,9 +78,15 @@ def get_connected_devices():
             device_info["hostname"] = lease["hostname"]
         else:
             device_info["error"] = "Nessun lease DHCP trovato (dispositivo con IP statico o lease scaduto)"
+        
+        # Poiché non abbiamo parsato dati TX/RX dall'output di iwinfo, utilizziamo valori di default
+        device_info["tx_bytes"] = "0"
+        device_info["rx_bytes"] = "0"
+
         devices.append(device_info)
     
-    return jsonify(devices)
+    # Restituisci la lista dei dispositivi in un dizionario con chiave 'connected_devices'
+    return JSONResponse(content={"connected_devices": devices})
 
 
 
