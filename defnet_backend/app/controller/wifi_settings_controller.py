@@ -1,121 +1,84 @@
 from asyncio.log import logger
 from fastapi import APIRouter, HTTPException
-import os, subprocess
+import subprocess
+
+from flask import jsonify
 from service.wifi_settings_service import get_ssid, set_ssid, get_encryption, set_encryption, get_password, set_password, get_lan_ip
 import qrcode
 from qrcode.image.pil import PilImage
-from service.wifi_settings_service import get_ssid, get_encryption, get_password
 from io import BytesIO
 import base64
+
 from models.wifi_settings import WifiSettings
 from fastapi import  HTTPException
 import asyncio
-
-
+import re
 
 router = APIRouter()
 
-import subprocess
-import os
-from fastapi import HTTPException
-
-import subprocess
-import os
-from fastapi import HTTPException
-
-def get_assoclist(interface="phy1-ap0"):
-    """ Ottiene la lista degli associati da iwinfo """
-    assoclist = []
+def get_connected_macs():
+    """
+    Esegue il comando 'iwinfo phy1-ap0 assoclist' per ottenere i MAC dei dispositivi connessi.
+    Restituisce una lista di MAC (in minuscolo).
+    """
     try:
-        result = subprocess.run(['iwinfo', interface, 'assoclist'], capture_output=True, text=True)
-        lines = result.stdout.splitlines()
-        for line in lines:
-            # Estrai MAC address e RSSI
-            if line:
+        output = subprocess.check_output(["iwinfo", "phy1-ap0", "assoclist"], text=True)
+    except subprocess.CalledProcessError as e:
+        logger.error("Errore durante l'esecuzione di iwinfo: %s", e)
+        return []
+    
+    # Utilizza una regex per trovare gli indirizzi MAC
+    mac_pattern = re.compile(r"([0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5})")
+    macs = mac_pattern.findall(output)
+    
+    # Rimuove eventuali duplicati e normalizza in minuscolo
+    return list(set(mac.lower() for mac in macs))
+
+def get_dhcp_leases(leases_file="/tmp/dhcp.leases"):
+    """
+    Legge il file dei lease DHCP e crea un dizionario indicizzato per MAC.
+    Il file dovrebbe avere il formato:
+      <timestamp> <MAC> <IP> <nome_host> <client_id>
+    """
+    leases = {}
+    try:
+        with open(leases_file, "r") as f:
+            for line in f:
                 parts = line.split()
-                mac = parts[0]
-                rssi = parts[1] if len(parts) > 1 else "N/A"
-                assoclist.append({
-                    "mac": mac,
-                    "rssi": rssi
-                })
-    except Exception as e:
-        print(f"Error getting assoclist: {e}")
-    return assoclist
+                if len(parts) >= 5:
+                    timestamp, mac, ip, hostname, client_id = parts[:5]
+                    leases[mac.lower()] = {
+                        "timestamp": timestamp,
+                        "ip": ip,
+                        "hostname": hostname,
+                        "client_id": client_id
+                    }
+    except FileNotFoundError:
+        logger.error("Il file %s non è stato trovato.", leases_file)
+    return leases
 
-def get_network_stats():
-    """ Ottenere le statistiche di rete come tx/rx bytes per interfaccia """
-    network_stats = {}
-    for interface in os.listdir('/sys/class/net/'):
-        stats_path = f"/sys/class/net/{interface}/statistics"
-        if os.path.exists(stats_path):
-            try:
-                with open(os.path.join(stats_path, "tx_bytes"), "r") as f:
-                    tx_bytes = f.read().strip()
-                with open(os.path.join(stats_path, "rx_bytes"), "r") as f:
-                    rx_bytes = f.read().strip()
-                network_stats[interface] = {
-                    "tx_bytes": tx_bytes,
-                    "rx_bytes": rx_bytes
-                }
-            except Exception as e:
-                print(f"Error reading network stats for {interface}: {e}")
-    return network_stats
+@router.get('/connected-devices')
+def get_connected_devices():
+    """
+    Controller endpoint per ottenere i dispositivi attualmente connessi.
+    Per ogni dispositivo trovato in 'iwinfo phy1-ap0 assoclist' cerca le informazioni (IP, hostname)
+    corrispondenti in /tmp/dhcp.leases.
+    """
+    connected_macs = get_connected_macs()
+    dhcp_leases = get_dhcp_leases()
 
-def get_device_name(ip):
-    """ Cerca il nome del dispositivo dato l'indirizzo IP utilizzando il comando `getent` """
-    try:
-        result = subprocess.run(['getent', 'hosts', ip], capture_output=True, text=True)
-        if result.returncode == 0:
-            # Estrarre il nome host dall'output
-            return result.stdout.split()[0]
-    except Exception as e:
-        print(f"Error getting device name for {ip}: {e}")
-    return "Unknown"
-
-@router.get("/devices")
-async def get_connected_devices_controller():
-    try:
-        # Ottenere la lista degli associati (dispositivi connessi via Wi-Fi)
-        assoclist_devices = get_assoclist()
-
-        # Ottenere statistiche di rete (tx/rx bytes)
-        network_stats = get_network_stats()
-
-        # Combinare le informazioni dei dispositivi
-        devices = []
-        for assoc_device in assoclist_devices:
-            device_info = {
-                "mac": assoc_device["mac"],
-                "rssi": assoc_device["rssi"],
-                "interface": "unknown",  # L'interfaccia sarà identificata tramite le statistiche
-                "tx_bytes": "N/A",
-                "rx_bytes": "N/A",
-                "hostname": "Unknown"  # Nome host inizialmente sconosciuto
-            }
-
-            # Aggiungere le statistiche di rete
-            for interface in network_stats:
-                if interface.startswith("phy1"):  # Associa l'interfaccia corretta, per esempio 'phy1-ap0'
-                    device_info["interface"] = interface
-                    device_info["tx_bytes"] = network_stats[interface].get("tx_bytes", "N/A")
-                    device_info["rx_bytes"] = network_stats[interface].get("rx_bytes", "N/A")
-                    break
-
-            # Cerca il nome del dispositivo tramite l'IP (se disponibile)
-            # Dato che i dispositivi connessi via Wi-Fi di solito hanno un IP sulla rete, potresti voler usare questo:
-            device_info["hostname"] = get_device_name(device_info["mac"])  # Aggiungi il nome host, se disponibile
-
-            devices.append(device_info)
-
-        return {"connected_devices": devices}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-
-
+    devices = []
+    for mac in connected_macs:
+        device_info = {"mac": mac}
+        if mac in dhcp_leases:
+            lease = dhcp_leases[mac]
+            device_info["ip"] = lease["ip"]
+            device_info["hostname"] = lease["hostname"]
+        else:
+            device_info["error"] = "Nessun lease DHCP trovato (dispositivo con IP statico o lease scaduto)"
+        devices.append(device_info)
+    
+    return jsonify(devices)
 
 
 
