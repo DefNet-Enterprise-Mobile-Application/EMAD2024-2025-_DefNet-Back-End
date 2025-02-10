@@ -123,7 +123,7 @@ class ConnectionManager:
             logger.error(f"Errore durante il broadcast: {e}")
 
 
-    async def send_heartbeat(websocket: WebSocket):
+    async def send_heartbeat(self,websocket: WebSocket):
         while True:
             try:
                 await websocket.send_json({"action": "ping"})
