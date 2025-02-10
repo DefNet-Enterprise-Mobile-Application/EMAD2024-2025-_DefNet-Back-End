@@ -3,9 +3,14 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPExce
 from fastapi.websockets import WebSocketState
 from sqlalchemy.orm import Session
 import logging
+import asyncio
+
 from service.user_service import get_user_by_id  # Importa la funzione per recuperare l'utente dal DB
 from database.database import get_db  # Funzione per ottenere il DB dalla sessione
 from models.notification_alert import Notifica
+
+
+
 router = APIRouter()
 
 # Configurazione logging per debug
@@ -118,6 +123,15 @@ class ConnectionManager:
             logger.error(f"Errore durante il broadcast: {e}")
 
 
+    async def send_heartbeat(websocket: WebSocket):
+        while True:
+            try:
+                await websocket.send_json({"action": "ping"})
+            except Exception as e:
+                logger.error("Errore inviando il ping: %s", e)
+                break
+            await asyncio.sleep(30)  # invia un ping ogni 30 secondi
+
 
     async def send_message_to_user(self, user_id: int, message: str, db: Session):
         """
@@ -162,19 +176,28 @@ async def websocket_alerts(websocket: WebSocket, user_id: int, db: Session = Dep
     
     # Invio della notifica di login appena l'utente si connette
     alert_message = f"Utente {user_id} ha effettuato il login"
-    await manager.send_message_to_user(user_id, alert_message, db=db)  # Messaggio per il solo utente
-
+    await manager.send_message_to_user(user_id, alert_message, db=db)
+    
+    # Avvia il task per il heartbeat (invio periodico del ping)
+    heartbeat_task = asyncio.create_task(manager.send_heartbeat(websocket))
+    
     try:
         while True:
             data = await websocket.receive_json()
-            # Gestisci i dati ricevuti...
-
+            # Se riceviamo un "pong", significa che il client ha risposto al ping
+            if data.get("action") == "pong":
+                logger.debug(f"Ricevuto pong da User ID {user_id}")
+                continue  # Puoi aggiornare uno stato o un timestamp qui, se necessario
+            # Gestisci altri tipi di messaggi
+            logger.debug(f"Messaggio ricevuto da User ID {user_id}: {data}")
     except WebSocketDisconnect:
         logger.info(f"Disconnessione WebSocket da {websocket.client.host}:{websocket.client.port}")
-        await manager.disconnect(websocket=websocket, user_id=user_id)
+        await manager.disconnect(websocket, user_id)
     except Exception as e:
         logger.error(f"Errore durante la gestione del WebSocket: {e}")
         await websocket.close(code=4000)
+    finally:
+        heartbeat_task.cancel()  # Cancella il task del ping quando la connessione termina
 
 
 
